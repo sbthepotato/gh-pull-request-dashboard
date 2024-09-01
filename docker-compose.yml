@@ -1,0 +1,21 @@
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "5000:80"
+    networks:
+      - gh-app-network
+
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "8080:8080"
+    networks:
+      - gh-app-network
+
+networks:
+  gh-app-network:
+    driver: bridge
