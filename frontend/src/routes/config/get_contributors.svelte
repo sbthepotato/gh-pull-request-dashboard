@@ -7,14 +7,9 @@
         "http://localhost:8080/config/get_contributors"
       );
 
-      const data = await response.json();
-
-      contributors = data.message;
-
-      console.log(contributors);
+      contributors = await response.json();
     } catch (error) {
       console.error("Error fetching data from the backend:", error);
-      answer = "Error connecting to the backend";
     }
   }
 </script>
@@ -25,11 +20,11 @@
 
   {#if contributors.length > 0}
     <p>{contributors.length}</p>
-    <!--   <ul>
+    <ul>
       {#each contributors as i}
         <li>{i.login}</li>
       {/each}
-    </ul> -->
+    </ul>
   {:else}
     <p>No contributors found</p>
   {/if}
