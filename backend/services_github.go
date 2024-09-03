@@ -5,15 +5,13 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/google/go-github/v64/github"
 )
 
 func get_contributors(ctx context.Context, c *github.Client, owner string, repo string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
-		enableCors(&w)
-		w.Header().Set("Content-Type", "application/json")
 
 		opt := &github.ListContributorsOptions{
 			ListOptions: github.ListOptions{PerPage: 5},
@@ -28,7 +26,7 @@ func get_contributors(ctx context.Context, c *github.Client, owner string, repo 
 		if err != nil {
 			log.Fatalf("Error marshalling contributors to JSON: %e", err)
 		}
-
+		enableCors(&w)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(jsonData)
 	}
@@ -36,9 +34,6 @@ func get_contributors(ctx context.Context, c *github.Client, owner string, repo 
 
 func get_pr_list(ctx context.Context, c *github.Client, owner string, repo string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
-		enableCors(&w)
-		w.Header().Set("Content-Type", "application/json")
 
 		opts := &github.PullRequestListOptions{
 			State:       "open",
@@ -55,6 +50,33 @@ func get_pr_list(ctx context.Context, c *github.Client, owner string, repo strin
 			log.Fatalf("Error marshalling Pull Requests to JSON: %e", err)
 		}
 
+		enableCors(&w)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(jsonData)
+	}
+}
+
+func get_reviews(ctx context.Context, c *github.Client, owner string, repo string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		pr_number, err := strconv.Atoi(r.URL.Query().Get("pr"))
+		if err != nil {
+			log.Println("pr num ", r.URL.Query().Get("pr"))
+			log.Fatalf("PR is not number: %e", err)
+		}
+
+		reviews, _, err := c.PullRequests.ListReviews(ctx, owner, repo, pr_number, nil)
+		if err != nil {
+			log.Printf("Error fetching reviews for pull request #%d: %v", pr_number, err)
+		}
+
+		jsonData, err := json.Marshal(reviews)
+		if err != nil {
+			log.Fatalf("Error marshalling reviews to JSON: %e", err)
+		}
+
+		enableCors(&w)
+		w.Header().Set("Content-Type", "application/json")
 		w.Write(jsonData)
 	}
 }
