@@ -2,61 +2,54 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"log"
-	"net/http"
+	"sync"
 
 	"github.com/google/go-github/v64/github"
 )
 
-type Review_Overview struct {
-	User  string
-	State string
-}
+func gh_get_contributors(ctx context.Context, c *github.Client, owner string, repo string) []*github.Contributor {
 
-type Custom_Pull_Request struct {
-	github.PullRequest
-	Review_Overview []Review_Overview
-}
-
-func get_contributors(ctx context.Context, c *github.Client, owner string, repo string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		opt := &github.ListContributorsOptions{
-			ListOptions: github.ListOptions{PerPage: 5},
-		}
-
-		contributors, _, err := c.Repositories.ListContributors(ctx, owner, repo, opt)
-		if err != nil {
-			log.Fatalf("Error fetching contributors: %e", err)
-		}
-
-		jsonData, err := json.Marshal(contributors)
-		if err != nil {
-			log.Fatalf("Error marshalling contributors to JSON: %e", err)
-		}
-		enableCors(&w)
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(jsonData)
+	opt := &github.ListContributorsOptions{
+		ListOptions: github.ListOptions{PerPage: 5},
 	}
+
+	contributors, _, err := c.Repositories.ListContributors(ctx, owner, repo, opt)
+	if err != nil {
+		log.Fatalf("Error fetching contributors: %e", err)
+	}
+
+	return contributors
+
 }
 
-func get_pr_list(ctx context.Context, c *github.Client, owner string, repo string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo string) []Custom_Pull_Request {
 
-		opts := &github.PullRequestListOptions{
-			State:       "open",
-			ListOptions: github.ListOptions{PerPage: 30},
-		}
+	opts := &github.PullRequestListOptions{
+		State:       "open",
+		ListOptions: github.ListOptions{PerPage: 30},
+	}
 
-		gh_prs, _, err := c.PullRequests.List(ctx, owner, repo, opts)
-		if err != nil {
-			log.Fatalf("Error fetching Pull Requests: %e", err)
-		}
+	gh_prs, _, err := c.PullRequests.List(ctx, owner, repo, opts)
+	if err != nil {
+		log.Fatalf("Error fetching Pull Requests: %e", err)
+	}
 
-		prs := make([]Custom_Pull_Request, 0)
+	prs := make([]Custom_Pull_Request, 0)
 
-		for _, pr := range gh_prs {
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+
+	for _, pr := range gh_prs {
+
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+
+			if *pr.Draft {
+				*pr.State = "draft"
+			}
 
 			review_overview := make(map[string]string, 0)
 
@@ -102,17 +95,15 @@ func get_pr_list(ctx context.Context, c *github.Client, owner string, repo strin
 				}
 			}
 
+			mu.Lock()
 			prs = append(prs, *custom_pr)
+			mu.Unlock()
 
-		}
+		}()
 
-		jsonData, err := json.Marshal(prs)
-		if err != nil {
-			log.Fatalf("Error marshalling Pull Requests to JSON: %e", err)
-		}
-
-		enableCors(&w)
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(jsonData)
+		wg.Wait()
 	}
+
+	return prs
+
 }

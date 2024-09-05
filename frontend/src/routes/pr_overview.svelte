@@ -1,6 +1,13 @@
 <script>
+  import { onMount } from "svelte";
+  import Review from "../components/review.svelte";
+  import State from "../components/state.svelte";
+
   let pr_list = [];
-  let reviews = [];
+
+  onMount(() => {
+    get_pr_list();
+  });
 
   async function get_pr_list() {
     try {
@@ -16,18 +23,8 @@
 <section>
   <h1>Github Pull request overview</h1>
 
-  <button on:click={get_pr_list}>Refresh PR list</button>
-
   {#if pr_list.length > 0}
     <table>
-      <thead>
-        <tr>
-          <th>Created By</th>
-          <th>State</th>
-          <th>Title</th>
-          <th>Reviews</th>
-        </tr>
-      </thead>
       <tbody>
         {#each pr_list as pr}
           <tr>
@@ -37,17 +34,16 @@
               </a>
             </td>
             <td>
-              {#if pr.draft}
-                draft
-              {:else}
-                {pr.state} - {pr.number}
-              {/if}
+              <State state={pr.state} />
+              #{pr.number}
             </td>
-            <td>{pr.title}</td>
+            <td>
+              {pr.title}
+            </td>
             <td>
               {#if pr.Review_Overview !== undefined}
                 {#each pr.Review_Overview as review}
-                  {review.User} - {review.State} <br />
+                  {review.User} <Review state={review.State} /><br />
                 {/each}
               {/if}
             </td>
@@ -64,15 +60,14 @@
   table {
     border-collapse: collapse;
     width: 100%;
+    border-radius: 10%;
+    border: 1px solid var(--border);
   }
 
   th,
   td {
     text-align: left;
     padding: 8px;
-  }
-
-  tr:nth-child(odd) {
-    background-color: #2b2b33;
+    border-top: 1px solid var(--border);
   }
 </style>
