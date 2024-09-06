@@ -8,26 +8,78 @@ import (
 	"github.com/google/go-github/v64/github"
 )
 
-func gh_get_contributors(ctx context.Context, c *github.Client, owner string, repo string) []*github.Contributor {
+func gh_get_members(ctx context.Context, c *github.Client, owner string) []*Custom_User {
 
-	opt := &github.ListContributorsOptions{
-		ListOptions: github.ListOptions{PerPage: 5},
+	opt := &github.ListMembersOptions{
+		ListOptions: github.ListOptions{PerPage: 99},
 	}
 
-	contributors, _, err := c.Repositories.ListContributors(ctx, owner, repo, opt)
+	// get members of org
+	members, _, err := c.Organizations.ListMembers(ctx, owner, opt)
 	if err != nil {
 		log.Fatalf("Error fetching contributors: %e", err)
 	}
 
-	return contributors
+	users := make([]*Custom_User, 0)
+	userTeams := make(map[string]string)
 
+	teams := gh_get_teams(ctx, c, owner)
+
+	// find team members of each team in org and add it to a map
+	for _, team := range teams {
+
+		team_members, _, err := c.Teams.ListTeamMembersBySlug(ctx, owner, *team.Slug, nil)
+		if err != nil {
+			log.Fatalf("error fetching team members: %e", err)
+		}
+
+		for _, team_member := range team_members {
+			userTeams[*team_member.Login] = *team.Name
+		}
+	}
+
+	userMap := make(map[string]*Custom_User)
+
+	// go through all org members to get extended user info, also add team info
+	for _, member := range members {
+		user, _, err := c.Users.Get(ctx, *member.Login)
+		if err != nil {
+			log.Fatalf("Error fetching user: %e", err)
+		}
+
+		custom_user := new(Custom_User)
+		custom_user.User = *user
+		custom_user.Team_Name = userTeams[*user.Login]
+
+		users = append(users, custom_user)
+
+		userMap[*user.Login] = custom_user
+	}
+
+	write_users(userMap)
+
+	return users
+}
+
+func gh_get_teams(ctx context.Context, c *github.Client, owner string) []*github.Team {
+
+	opt := &github.ListOptions{
+		PerPage: 99,
+	}
+
+	teams, _, err := c.Teams.ListTeams(ctx, owner, opt)
+	if err != nil {
+		log.Fatalf("Error fetching teams: %e", err)
+	}
+
+	return teams
 }
 
 func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo string) []Custom_Pull_Request {
 
 	opts := &github.PullRequestListOptions{
 		State:       "open",
-		ListOptions: github.ListOptions{PerPage: 30},
+		ListOptions: github.ListOptions{PerPage: 99},
 	}
 
 	gh_prs, _, err := c.PullRequests.List(ctx, owner, repo, opts)
@@ -42,14 +94,20 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 
 	for _, pr := range gh_prs {
 
+		if *pr.Draft {
+			continue
+		}
+
 		wg.Add(1)
 
 		go func() {
 			defer wg.Done()
 
+			/* currently draft PRs are skipped, if they are to be included then this is needed
 			if *pr.Draft {
 				*pr.State = "draft"
 			}
+			*/
 
 			review_overview := make(map[string]string, 0)
 
