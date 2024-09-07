@@ -12,13 +12,13 @@ import (
 )
 
 var last_fetched_pr time.Time
-var prs []Custom_Pull_Request
+var cached_prs []*Custom_Pull_Request
 
 var last_fetched_teams time.Time
 var cached_teams []*Custom_Team
 
 func hello_go(w http.ResponseWriter, r *http.Request) {
-	setHeaders(&w, "json")
+	setHeaders(&w, "text")
 	w.Write([]byte("Hello, from the golang backend " + time.Now().String()))
 }
 
@@ -113,13 +113,13 @@ func get_pr_list(ctx context.Context, c *github.Client, owner string, repo strin
 
 		if currentTime.Sub(last_fetched_pr).Minutes() > 30 {
 			log.Print("get new")
-			prs = gh_get_pr_list(ctx, c, owner, repo)
+			cached_prs = gh_get_pr_list(ctx, c, owner, repo)
 			last_fetched_pr = time.Now()
 		} else {
 			log.Print("use cached")
 		}
 
-		jsonData, err := json.Marshal(prs)
+		jsonData, err := json.Marshal(cached_prs)
 		if err != nil {
 			log.Fatalf("Error marshalling Pull Requests to JSON: %e", err)
 		}

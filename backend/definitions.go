@@ -20,7 +20,7 @@ type Review_Overview struct {
 
 type Custom_Pull_Request struct {
 	github.PullRequest
-	Review_Overview []Review_Overview `json:"review_overview,omitempty"`
+	Review_Overview []*Review_Overview `json:"review_overview,omitempty"`
 }
 
 type Custom_User struct {

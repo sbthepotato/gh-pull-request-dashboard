@@ -93,7 +93,7 @@ func gh_get_teams(ctx context.Context, c *github.Client, owner string) []*Custom
 	return detailed_teams
 }
 
-func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo string) []Custom_Pull_Request {
+func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo string) []*Custom_Pull_Request {
 
 	opts := &github.PullRequestListOptions{
 		State:       "open",
@@ -105,7 +105,7 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 		log.Fatalf("Error fetching Pull Requests: %e", err)
 	}
 
-	prs := make([]Custom_Pull_Request, 0)
+	prs := make([]*Custom_Pull_Request, 0)
 
 	var mu sync.Mutex
 	var wg sync.WaitGroup
@@ -121,11 +121,9 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 		go func() {
 			defer wg.Done()
 
-			/* currently draft PRs are skipped, if they are to be included then this is needed
 			if *pr.Draft {
 				*pr.State = "draft"
 			}
-			*/
 
 			review_overview := make(map[string]string, 0)
 
@@ -159,7 +157,7 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 
 			custom_pr := new(Custom_Pull_Request)
 			custom_pr.PullRequest = *pr
-			custom_pr.Review_Overview = make([]Review_Overview, 0)
+			custom_pr.Review_Overview = make([]*Review_Overview, 0)
 
 			for user, state := range review_overview {
 				if (state != "DISMISSED") && (state != "COMMENTED") {
@@ -167,12 +165,12 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 					*review_overview.User = user
 					*review_overview.State = state
 
-					custom_pr.Review_Overview = append(custom_pr.Review_Overview, *review_overview)
+					custom_pr.Review_Overview = append(custom_pr.Review_Overview, review_overview)
 				}
 			}
 
 			mu.Lock()
-			prs = append(prs, *custom_pr)
+			prs = append(prs, custom_pr)
 			mu.Unlock()
 
 		}()

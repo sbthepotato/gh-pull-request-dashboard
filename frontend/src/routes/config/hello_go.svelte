@@ -5,11 +5,11 @@
     try {
       const response = await fetch("http://localhost:8080/config/hello_go");
 
-      const data = await response.json();
+      const data = await response;
 
       console.log(data);
 
-      answer = data.message;
+      answer = data;
     } catch (error) {
       console.error("Error fetching data from the backend:", error);
       answer = "Error connecting to the backend";
