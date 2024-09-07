@@ -49,7 +49,7 @@ func gh_get_members(ctx context.Context, c *github.Client, owner string) []*Cust
 
 		custom_user := new(Custom_User)
 		custom_user.User = *user
-		custom_user.Team_Name = userTeams[*user.Login]
+		*custom_user.Team_Name = userTeams[*user.Login]
 
 		users = append(users, custom_user)
 
@@ -164,8 +164,8 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 			for user, state := range review_overview {
 				if (state != "DISMISSED") && (state != "COMMENTED") {
 					review_overview := new(Review_Overview)
-					review_overview.User = user
-					review_overview.State = state
+					*review_overview.User = user
+					*review_overview.State = state
 
 					custom_pr.Review_Overview = append(custom_pr.Review_Overview, *review_overview)
 				}

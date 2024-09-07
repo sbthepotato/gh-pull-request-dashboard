@@ -79,8 +79,8 @@ func set_teams(w http.ResponseWriter, r *http.Request) {
 	team_map := read_teams()
 
 	for _, team := range team_data {
-		team_map[team.Slug].Review_Enabled = team.Review_Enabled
-		team_map[team.Slug].Review_Order = team.Review_Order
+		*team_map[team.Slug].ReviewEnabled = team.ReviewEnabled
+		*team_map[team.Slug].ReviewOrder = team.ReviewOrder
 
 		updated_team := team_map[team.Slug]
 

@@ -3,35 +3,40 @@ package main
 import "github.com/google/go-github/v64/github"
 
 type Config struct {
-	Token string `json:"token"`
-	Owner string `json:"owner"`
-	Repo  string `json:"repo"`
+	Token string `json:"token,omitempty"`
+	Owner string `json:"owner,omitempty"`
+	Repo  string `json:"repo,omitempty"`
+}
+
+type Review_aggregation struct {
+	github.Team
+	PendingReviewCount *int `json:"pending_review_count,omitempty"`
 }
 
 type Review_Overview struct {
-	User  string `json:"user"`
-	State string `json:"state"`
+	User  *string `json:"user,omitempty"`
+	State *string `json:"state,omitempty"`
 }
 
 type Custom_Pull_Request struct {
 	github.PullRequest
-	Review_Overview []Review_Overview `json:"review_overview"`
+	Review_Overview []Review_Overview `json:"review_overview,omitempty"`
 }
 
 type Custom_User struct {
 	github.User
-	Team_Name string `json:"team_name"`
-	Team_Slug string `json:"team_slug"`
+	Team_Name *string `json:"team_name,omitempty"`
+	Team_Slug *string `json:"team_slug,omitempty"`
 }
 
 type Custom_Team struct {
 	github.Team
-	Review_Enabled bool `json:"review_enabled"`
-	Review_Order   int  `json:"review_order"`
+	ReviewEnabled *bool `json:"review_enabled,omitempty"`
+	ReviewOrder   *int  `json:"review_order,omitempty"`
 }
 
 type Set_Team struct {
-	Slug           string `json:"slug"`
-	Review_Enabled bool   `json:"review_enabled"`
-	Review_Order   int    `json:"review_order"`
+	Slug          string `json:"slug,omitempty"`
+	ReviewEnabled bool   `json:"review_enabled,omitempty"`
+	ReviewOrder   int    `json:"review_order,omitempty"`
 }
