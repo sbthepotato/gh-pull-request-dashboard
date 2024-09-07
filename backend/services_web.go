@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 	"time"
@@ -13,31 +14,83 @@ import (
 var last_fetched_pr time.Time
 var prs []Custom_Pull_Request
 
-var teams []*github.Team
+var last_fetched_teams time.Time
+var cached_teams []*Custom_Team
 
 func hello_go(w http.ResponseWriter, r *http.Request) {
-	setHeaders(&w)
+	setHeaders(&w, "json")
 	w.Write([]byte("Hello, from the golang backend " + time.Now().String()))
 }
 
 func get_teams(ctx context.Context, c *github.Client, owner string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		if len(teams) < 1 {
-			teams = gh_get_teams(ctx, c, owner)
+		refresh := r.URL.Query().Get("refresh")
+		currentTime := time.Now()
+
+		if refresh == "y" {
 			log.Println("get new teams")
+			cached_teams = gh_get_teams(ctx, c, owner)
+		} else if (currentTime.Sub(last_fetched_teams).Hours() < 1) || (len(cached_teams) == 0) {
+			team_map := read_teams()
+			cached_teams = make([]*Custom_Team, 0)
+			for _, team := range team_map {
+				cached_teams = append(cached_teams, team)
+			}
+			log.Println("get teams from file")
 		} else {
-			log.Println("use cached teams")
+			log.Println("get cached teams")
 		}
 
-		jsonData, err := json.Marshal(teams)
+		jsonData, err := json.Marshal(cached_teams)
 		if err != nil {
 			log.Fatalln("Error marshalling teams to JSON: ", err)
 		}
 
-		setHeaders(&w)
+		setHeaders(&w, "json")
 		w.Write(jsonData)
 	}
+}
+
+func set_teams(w http.ResponseWriter, r *http.Request) {
+	setHeaders(&w, "text")
+
+	if r.Method != http.MethodPost {
+		http.Error(w, "invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Failed to read request body", http.StatusBadRequest)
+		return
+	}
+
+	defer r.Body.Close()
+
+	team_data := make([]Set_Team, 0)
+	cached_teams = make([]*Custom_Team, 0)
+
+	err = json.Unmarshal(body, &team_data)
+	if err != nil {
+		log.Println("error unmarshaling team data: ", err.Error())
+	}
+
+	team_map := read_teams()
+
+	for _, team := range team_data {
+		team_map[team.Slug].Review_Enabled = team.Review_Enabled
+		team_map[team.Slug].Review_Order = team.Review_Order
+
+		updated_team := team_map[team.Slug]
+
+		cached_teams = append(cached_teams, updated_team)
+	}
+
+	write_teams(team_map)
+
+	setHeaders(&w, "text")
+	w.Write([]byte("Team data saved successfully"))
 }
 
 func get_members(ctx context.Context, c *github.Client, owner string) http.HandlerFunc {
@@ -48,7 +101,7 @@ func get_members(ctx context.Context, c *github.Client, owner string) http.Handl
 			log.Fatalf("Error marshalling members to JSON: %e", err)
 		}
 
-		setHeaders(&w)
+		setHeaders(&w, "json")
 		w.Write(jsonData)
 	}
 }
@@ -71,7 +124,7 @@ func get_pr_list(ctx context.Context, c *github.Client, owner string, repo strin
 			log.Fatalf("Error marshalling Pull Requests to JSON: %e", err)
 		}
 
-		setHeaders(&w)
+		setHeaders(&w, "json")
 		w.Write(jsonData)
 	}
 }

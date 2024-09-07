@@ -61,7 +61,7 @@ func gh_get_members(ctx context.Context, c *github.Client, owner string) []*Cust
 	return users
 }
 
-func gh_get_teams(ctx context.Context, c *github.Client, owner string) []*github.Team {
+func gh_get_teams(ctx context.Context, c *github.Client, owner string) []*Custom_Team {
 
 	opt := &github.ListOptions{
 		PerPage: 99,
@@ -69,10 +69,28 @@ func gh_get_teams(ctx context.Context, c *github.Client, owner string) []*github
 
 	teams, _, err := c.Teams.ListTeams(ctx, owner, opt)
 	if err != nil {
-		log.Fatalf("Error fetching teams: %e", err)
+		log.Fatalln("Error fetching teams: ", err.Error())
 	}
 
-	return teams
+	detailed_teams := make([]*Custom_Team, 0)
+	teamMap := make(map[string]*Custom_Team)
+
+	for _, team := range teams {
+		detailed_team, _, err := c.Teams.GetTeamBySlug(ctx, owner, *team.Slug)
+		if err != nil {
+			log.Fatal("Error fetching detailed team info: ", err.Error())
+		}
+
+		Custom_Team := new(Custom_Team)
+		Custom_Team.Team = *detailed_team
+
+		teamMap[*detailed_team.Slug] = Custom_Team
+		detailed_teams = append(detailed_teams, Custom_Team)
+	}
+
+	write_teams(teamMap)
+
+	return detailed_teams
 }
 
 func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo string) []Custom_Pull_Request {
