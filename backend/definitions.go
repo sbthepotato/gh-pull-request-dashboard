@@ -8,11 +8,6 @@ type Config struct {
 	Repo  string `json:"repo,omitempty"`
 }
 
-type ReviewAggregation struct {
-	github.Team
-	PendingReviewCount *int `json:"pending_review_count,omitempty"`
-}
-
 type Review struct {
 	User  *CustomUser `json:"user,omitempty"`
 	Team  *CustomTeam `json:"team,omitempty"`
@@ -20,7 +15,7 @@ type Review struct {
 }
 
 type CustomPullRequest struct {
-	github.PullRequest
+	*github.PullRequest
 	CreatedBy      *CustomUser `json:"created_by,omitempty"`
 	ReviewOverview []*Review   `json:"review_overview,omitempty"`
 	Awaiting       *string     `json:"awaiting,omitempty"`
@@ -32,7 +27,7 @@ type CustomUser struct {
 }
 
 type CustomTeam struct {
-	github.Team
+	*github.Team
 	ReviewEnabled *bool `json:"review_enabled,omitempty"`
 	ReviewOrder   *int  `json:"review_order,omitempty"`
 }

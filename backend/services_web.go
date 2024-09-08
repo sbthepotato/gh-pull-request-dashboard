@@ -38,7 +38,7 @@ func get_teams(ctx context.Context, c *github.Client, owner string) http.Handler
 		} else if (currentTime.Sub(last_fetched_teams).Hours() < 1) || (len(cached_teams) == 0) {
 			log.Println("get teams from file")
 			cached_teams = make([]*CustomTeam, 0)
-			for _, team := range read_teams() {
+			for _, team := range read_teams(false) {
 				cached_teams = append(cached_teams, team)
 			}
 		} else {
@@ -79,18 +79,24 @@ func set_teams(w http.ResponseWriter, r *http.Request) {
 		log.Println("error unmarshaling team data: ", err.Error())
 	}
 
-	team_map := read_teams()
+	team_map := read_teams(false)
+	active_team_map := make(map[string]*CustomTeam)
 
 	for _, team := range team_data {
 		*team_map[team.Slug].ReviewEnabled = team.ReviewEnabled
 		*team_map[team.Slug].ReviewOrder = team.ReviewOrder
+
+		if team.ReviewEnabled {
+			active_team_map[team.Slug] = team_map[team.Slug]
+		}
 
 		updated_team := team_map[team.Slug]
 
 		cached_teams = append(cached_teams, updated_team)
 	}
 
-	write_teams(team_map)
+	write_teams(active_team_map, true)
+	write_teams(team_map, false)
 
 	setHeaders(&w, "text")
 	w.Write([]byte("Team data saved successfully"))

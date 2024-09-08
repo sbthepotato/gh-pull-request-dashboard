@@ -24,7 +24,7 @@ func gh_get_members(ctx context.Context, c *github.Client, owner string) []*Cust
 	users := make([]*CustomUser, 0)
 	userTeams := make(map[string]*CustomTeam)
 
-	teams := read_teams()
+	teams := read_teams(true)
 
 	// find team members of each team in org and add it to a map
 	for _, team := range teams {
@@ -89,7 +89,7 @@ func gh_get_teams(ctx context.Context, c *github.Client, owner string) []*Custom
 		} */
 
 		Custom_Team := new(CustomTeam)
-		Custom_Team.Team = *team
+		Custom_Team.Team = team
 		Custom_Team.ReviewEnabled = &default_review
 		Custom_Team.ReviewOrder = &default_order
 
@@ -97,7 +97,7 @@ func gh_get_teams(ctx context.Context, c *github.Client, owner string) []*Custom
 		detailed_teams = append(detailed_teams, Custom_Team)
 	}
 
-	write_teams(teamMap)
+	write_teams(teamMap, false)
 
 	return detailed_teams
 }
@@ -116,7 +116,7 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 
 	prs := make([]*CustomPullRequest, 0)
 	users := read_users()
-	teams := read_teams()
+	teams := read_teams(true)
 
 	var mu sync.Mutex
 	var wg sync.WaitGroup
@@ -139,7 +139,8 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 			review := new(Review)
 			review_overview := make([]Review, 0)
 			user_review_list := make([]string, 0)
-			status_requested := "REQUESTED"
+			status_requested := "REVIEW_REQUESTED"
+			changes_requested := "Changes Requested"
 
 			// first populate requested teams and users. any previous state doesn't matter if you're requested
 			if pr.RequestedTeams != nil {
@@ -184,10 +185,9 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 
 			custom_pr := new(CustomPullRequest)
 			custom_pr.CreatedBy = users[*pr.User.Login]
-			custom_pr.PullRequest = *pr
+			custom_pr.PullRequest = pr
 			custom_pr.ReviewOverview = make([]*Review, 0)
 			current_priority := 100
-			changes_requested := "CHANGES_REQUESTED"
 
 			for _, custom_review := range review_overview {
 				if (*custom_review.State != "DISMISSED") && (*custom_review.State != "COMMENTED") {
@@ -196,12 +196,12 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 					review.Team = custom_review.Team
 					review.State = custom_review.State
 
-					if *review.State == "REQUESTED" {
+					if *review.State == status_requested {
 						if *review.Team.ReviewOrder < current_priority {
 							current_priority = *review.Team.ReviewOrder
 							custom_pr.Awaiting = review.Team.Name
 						}
-					} else if *review.State == changes_requested {
+					} else if *review.State == "CHANGES_REQUESTED" {
 						custom_pr.Awaiting = &changes_requested
 						current_priority = -1
 					}

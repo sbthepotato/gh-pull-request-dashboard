@@ -13,6 +13,6 @@
   <Icon name="file-diff" color="red" {height} {width} />
 {:else if state === "COMMENTED"}
   <Icon name="comment" color="yellow" {height} {width} />
-{:else if state === "REQUESTED"}
+{:else if state === "REVIEW_REQUESTED"}
   <Icon name="dot-fill" color="yellow" {height} {width} />
 {/if}

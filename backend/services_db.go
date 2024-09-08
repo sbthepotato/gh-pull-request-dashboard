@@ -51,13 +51,19 @@ func read_users() map[string]*CustomUser {
 }
 
 // Write teams to file in db/teams.json
-func write_teams(teams map[string]*CustomTeam) {
+func write_teams(teams map[string]*CustomTeam, active_only bool) {
 	jsonData, err := json.Marshal(teams)
 	if err != nil {
 		log.Fatalln("Error marshalling teams to JSON: ", err.Error())
 	}
 
-	file, err := os.Create("db/teams.json")
+	var file *os.File
+
+	if active_only {
+		file, err = os.Create("db/teams_active.json")
+	} else {
+		file, err = os.Create("db/teams.json")
+	}
 	if err != nil {
 		log.Fatalln("Error creating teams file: ", err.Error())
 	}
@@ -71,8 +77,15 @@ func write_teams(teams map[string]*CustomTeam) {
 
 // Read users from db/teams.json.
 // Returns a map where the team.slug is the key and the value is the custom team struct
-func read_teams() map[string]*CustomTeam {
-	file, err := os.Open("db/teams.json")
+func read_teams(active_only bool) map[string]*CustomTeam {
+	var file *os.File
+	var err error
+
+	if active_only {
+		file, err = os.Open("db/teams_active.json")
+	} else {
+		file, err = os.Open("db/teams.json")
+	}
 	if err != nil {
 		log.Println("error reading team file", err)
 		return nil
