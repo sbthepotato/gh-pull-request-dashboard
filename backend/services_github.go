@@ -3,15 +3,16 @@ package main
 import (
 	"context"
 	"log"
+	"slices"
 	"sync"
 
 	"github.com/google/go-github/v64/github"
 )
 
-func gh_get_members(ctx context.Context, c *github.Client, owner string) []*Custom_User {
+func gh_get_members(ctx context.Context, c *github.Client, owner string) []*CustomUser {
 
 	opt := &github.ListMembersOptions{
-		ListOptions: github.ListOptions{PerPage: 99},
+		ListOptions: github.ListOptions{PerPage: 100},
 	}
 
 	// get members of org
@@ -20,8 +21,8 @@ func gh_get_members(ctx context.Context, c *github.Client, owner string) []*Cust
 		log.Fatalf("Error fetching contributors: %e", err)
 	}
 
-	users := make([]*Custom_User, 0)
-	userTeams := make(map[string]*Custom_Team)
+	users := make([]*CustomUser, 0)
+	userTeams := make(map[string]*CustomTeam)
 
 	teams := read_teams()
 
@@ -42,7 +43,7 @@ func gh_get_members(ctx context.Context, c *github.Client, owner string) []*Cust
 		}
 	}
 
-	userMap := make(map[string]*Custom_User)
+	userMap := make(map[string]*CustomUser)
 
 	// go through all org members to get extended user info, also add team info
 	for _, member := range members {
@@ -51,7 +52,7 @@ func gh_get_members(ctx context.Context, c *github.Client, owner string) []*Cust
 			log.Fatalf("Error fetching user: %e", err)
 		}
 
-		custom_user := new(Custom_User)
+		custom_user := new(CustomUser)
 		custom_user.User = user
 		custom_user.Team = userTeams[*user.Login]
 
@@ -64,10 +65,10 @@ func gh_get_members(ctx context.Context, c *github.Client, owner string) []*Cust
 	return users
 }
 
-func gh_get_teams(ctx context.Context, c *github.Client, owner string) []*Custom_Team {
+func gh_get_teams(ctx context.Context, c *github.Client, owner string) []*CustomTeam {
 
 	opt := &github.ListOptions{
-		PerPage: 99,
+		PerPage: 100,
 	}
 
 	teams, _, err := c.Teams.ListTeams(ctx, owner, opt)
@@ -75,8 +76,8 @@ func gh_get_teams(ctx context.Context, c *github.Client, owner string) []*Custom
 		log.Fatalln("Error fetching teams: ", err.Error())
 	}
 
-	detailed_teams := make([]*Custom_Team, 0)
-	teamMap := make(map[string]*Custom_Team)
+	detailed_teams := make([]*CustomTeam, 0)
+	teamMap := make(map[string]*CustomTeam)
 	default_review := false
 	default_order := 0
 
@@ -87,7 +88,7 @@ func gh_get_teams(ctx context.Context, c *github.Client, owner string) []*Custom
 			log.Fatal("Error fetching detailed team info: ", err.Error())
 		} */
 
-		Custom_Team := new(Custom_Team)
+		Custom_Team := new(CustomTeam)
 		Custom_Team.Team = *team
 		Custom_Team.ReviewEnabled = &default_review
 		Custom_Team.ReviewOrder = &default_order
@@ -101,11 +102,11 @@ func gh_get_teams(ctx context.Context, c *github.Client, owner string) []*Custom
 	return detailed_teams
 }
 
-func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo string) []*Custom_Pull_Request {
+func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo string) []*CustomPullRequest {
 
 	opts := &github.PullRequestListOptions{
 		State:       "open",
-		ListOptions: github.ListOptions{PerPage: 99},
+		ListOptions: github.ListOptions{PerPage: 100},
 	}
 
 	gh_prs, _, err := c.PullRequests.List(ctx, owner, repo, opts)
@@ -113,7 +114,9 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 		log.Fatalf("Error fetching Pull Requests: %e", err)
 	}
 
-	prs := make([]*Custom_Pull_Request, 0)
+	prs := make([]*CustomPullRequest, 0)
+	users := read_users()
+	teams := read_teams()
 
 	var mu sync.Mutex
 	var wg sync.WaitGroup
@@ -133,19 +136,30 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 				*pr.State = "draft"
 			}
 
-			review_overview := make(map[string]*string, 0)
+			review := new(Review)
+			review_overview := make([]Review, 0)
+			user_review_list := make([]string, 0)
 			status_requested := "REQUESTED"
 
 			// first populate requested teams and users. any previous state doesn't matter if you're requested
 			if pr.RequestedTeams != nil {
 				for _, req_team := range pr.RequestedTeams {
-					review_overview[*req_team.Name] = &status_requested
+					review.State = &status_requested
+					review.Team = teams[*req_team.Slug]
+					review.State = &status_requested
+
+					review_overview = append(review_overview, *review)
 				}
 			}
 
 			if pr.RequestedReviewers != nil {
 				for _, req_review := range pr.RequestedReviewers {
-					review_overview[*req_review.Login] = &status_requested
+					review.User = users[*req_review.Login]
+					review.Team = teams[*review.User.Team.Slug]
+					review.State = &status_requested
+
+					review_overview = append(review_overview, *review)
+					user_review_list = append(user_review_list, *req_review.Login)
 				}
 			}
 
@@ -157,24 +171,42 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 			// loop in reverse because we're only interested in the most recent event
 			for i := len(reviews) - 1; i >= 0; i-- {
 				//for _, review := range reviews {
-				review := reviews[i]
-				_, exists := review_overview[*review.User.Login]
-				if (!exists) && (*pr.User.Login != *review.User.Login) {
-					review_overview[*review.User.Login] = review.State
+				gh_review := reviews[i]
+				if (!slices.Contains(user_review_list, *gh_review.User.Login)) && (*pr.User.Login != *gh_review.User.Login) {
+					review := new(Review)
+					user_review_list = append(user_review_list, *gh_review.User.Login)
+					review.User = users[*gh_review.User.Login]
+					review.Team = teams[*review.User.Team.Slug]
+					review.State = gh_review.State
+					review_overview = append(review_overview, *review)
 				}
 			}
 
-			custom_pr := new(Custom_Pull_Request)
+			custom_pr := new(CustomPullRequest)
+			custom_pr.CreatedBy = users[*pr.User.Login]
 			custom_pr.PullRequest = *pr
-			custom_pr.Review_Overview = make([]*Review_Overview, 0)
+			custom_pr.ReviewOverview = make([]*Review, 0)
+			current_priority := 100
+			changes_requested := "CHANGES_REQUESTED"
 
-			for user, state := range review_overview {
-				if (*state != "DISMISSED") && (*state != "COMMENTED") {
-					review_overview := new(Review_Overview)
-					review_overview.User = &user
-					review_overview.State = state
+			for _, custom_review := range review_overview {
+				if (*custom_review.State != "DISMISSED") && (*custom_review.State != "COMMENTED") {
+					review := new(Review)
+					review.User = custom_review.User
+					review.Team = custom_review.Team
+					review.State = custom_review.State
 
-					custom_pr.Review_Overview = append(custom_pr.Review_Overview, review_overview)
+					if *review.State == "REQUESTED" {
+						if *review.Team.ReviewOrder < current_priority {
+							current_priority = *review.Team.ReviewOrder
+							custom_pr.Awaiting = review.Team.Name
+						}
+					} else if *review.State == changes_requested {
+						custom_pr.Awaiting = &changes_requested
+						current_priority = -1
+					}
+
+					custom_pr.ReviewOverview = append(custom_pr.ReviewOverview, review)
 				}
 			}
 

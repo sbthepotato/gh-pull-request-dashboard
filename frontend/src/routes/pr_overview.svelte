@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import Review from "../components/review.svelte";
   import State from "../components/state.svelte";
+  import User from "../components/user.svelte";
 
   let pr_list = [];
 
@@ -29,9 +30,7 @@
         {#each pr_list as pr}
           <tr>
             <td>
-              <a href={pr.user.html_url}>
-                {pr.user.login}
-              </a>
+              <User user={pr.created_by} />
             </td>
             <td>
               <State state={pr.state} />
@@ -41,9 +40,19 @@
               {pr.title}
             </td>
             <td>
+              {#if pr.awaiting != undefined}
+                {pr.awaiting}
+              {/if}
+            </td>
+            <td>
               {#if pr.review_overview !== undefined}
                 {#each pr.review_overview as review}
-                  {review.user} <Review state={review.state} /><br />
+                  {#if review.user !== undefined}
+                    {review.user.login}
+                  {:else}
+                    {review.team.name}
+                  {/if}
+                  <Review state={review.state} /><br />
                 {/each}
               {/if}
             </td>

@@ -8,7 +8,7 @@ import (
 )
 
 // Write users to file in db/users.json.
-func write_users(users map[string]*Custom_User) {
+func write_users(users map[string]*CustomUser) {
 	jsonData, err := json.Marshal(users)
 	if err != nil {
 		log.Fatalln("error marshalling users to JSON: ", err)
@@ -28,7 +28,7 @@ func write_users(users map[string]*Custom_User) {
 
 // Read users from db/users.json.
 // Returns a map where the key is the user.login and the value is the custom user struct
-func read_users() map[string]*Custom_User {
+func read_users() map[string]*CustomUser {
 	file, err := os.Open("db/users.json")
 	if err != nil {
 		log.Println("error reading user file: ", err)
@@ -40,7 +40,7 @@ func read_users() map[string]*Custom_User {
 		log.Fatalln("Error reading user file: ", err)
 	}
 
-	UserMap := make(map[string]*Custom_User)
+	UserMap := make(map[string]*CustomUser)
 
 	err = json.Unmarshal(jsonData, &UserMap)
 	if err != nil {
@@ -51,7 +51,7 @@ func read_users() map[string]*Custom_User {
 }
 
 // Write teams to file in db/teams.json
-func write_teams(teams map[string]*Custom_Team) {
+func write_teams(teams map[string]*CustomTeam) {
 	jsonData, err := json.Marshal(teams)
 	if err != nil {
 		log.Fatalln("Error marshalling teams to JSON: ", err.Error())
@@ -71,7 +71,7 @@ func write_teams(teams map[string]*Custom_Team) {
 
 // Read users from db/teams.json.
 // Returns a map where the team.slug is the key and the value is the custom team struct
-func read_teams() map[string]*Custom_Team {
+func read_teams() map[string]*CustomTeam {
 	file, err := os.Open("db/teams.json")
 	if err != nil {
 		log.Println("error reading team file", err)
@@ -83,7 +83,7 @@ func read_teams() map[string]*Custom_Team {
 		log.Fatalln("Error reading team file: ", err)
 	}
 
-	teamMap := make(map[string]*Custom_Team)
+	teamMap := make(map[string]*CustomTeam)
 
 	err = json.Unmarshal(jsonData, &teamMap)
 	if err != nil {

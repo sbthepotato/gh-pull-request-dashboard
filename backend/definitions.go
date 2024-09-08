@@ -8,33 +8,36 @@ type Config struct {
 	Repo  string `json:"repo,omitempty"`
 }
 
-type Review_aggregation struct {
+type ReviewAggregation struct {
 	github.Team
 	PendingReviewCount *int `json:"pending_review_count,omitempty"`
 }
 
-type Review_Overview struct {
-	User  *string `json:"user,omitempty"`
-	State *string `json:"state,omitempty"`
+type Review struct {
+	User  *CustomUser `json:"user,omitempty"`
+	Team  *CustomTeam `json:"team,omitempty"`
+	State *string     `json:"state,omitempty"`
 }
 
-type Custom_Pull_Request struct {
+type CustomPullRequest struct {
 	github.PullRequest
-	Review_Overview []*Review_Overview `json:"review_overview,omitempty"`
+	CreatedBy      *CustomUser `json:"created_by,omitempty"`
+	ReviewOverview []*Review   `json:"review_overview,omitempty"`
+	Awaiting       *string     `json:"awaiting,omitempty"`
 }
 
-type Custom_User struct {
+type CustomUser struct {
 	*github.User
-	Team *Custom_Team `json:"team,omitempty"`
+	Team *CustomTeam `json:"team,omitempty"`
 }
 
-type Custom_Team struct {
+type CustomTeam struct {
 	github.Team
 	ReviewEnabled *bool `json:"review_enabled,omitempty"`
 	ReviewOrder   *int  `json:"review_order,omitempty"`
 }
 
-type Set_Team struct {
+type SetTeam struct {
 	Slug          string `json:"slug,omitempty"`
 	ReviewEnabled bool   `json:"review_enabled,omitempty"`
 	ReviewOrder   int    `json:"review_order,omitempty"`

@@ -34,6 +34,11 @@
       hue-rotate(174deg) brightness(92%) contrast(87%);
   }
 
+  .white {
+    filter: invert(99%) sepia(1%) saturate(1998%) hue-rotate(66deg)
+      brightness(117%) contrast(100%);
+  }
+
   img {
     transform: 50% 50%;
   }
