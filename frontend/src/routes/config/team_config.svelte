@@ -7,11 +7,11 @@
     get_teams();
   });
 
-  async function get_teams(force_update) {
+  async function get_teams(refresh) {
     try {
       let url = "http://localhost:8080/config/get_teams";
 
-      if (force_update) {
+      if (refresh) {
         url = url + "?refresh=y";
       }
 
@@ -51,7 +51,7 @@
 </script>
 
 <h2>Team Configuration</h2>
-<button on:click={() => get_teams(true)}>Refresh Team List</button>
+<button on:click={() => get_teams(true)}>Hard refresh team list</button>
 <button on:click={() => set_teams()}>Save Teams</button>
 
 {#if teams.length > 0}

@@ -17,26 +17,18 @@
   }
 </script>
 
-<section id="hello_go">
-  <h2>Connection test</h2>
-  <button on:click={hellogo}>Say hello to the backend</button>
+<h2>Connection test</h2>
+<button on:click={hellogo}>Say hello to the backend</button>
 
-  {#if answer !== undefined}
-    <p>
-      Backend says:
-      <br />
-      <span>{answer}</span>
-    </p>
-  {/if}
-</section>
+{#if answer !== undefined}
+  <p>
+    Backend says:
+    <br />
+    <span>{answer}</span>
+  </p>
+{/if}
 
 <style>
-  section {
-    border: 1px solid black;
-    display: inline-block;
-    padding: 4px;
-  }
-
   span {
     color: green;
   }

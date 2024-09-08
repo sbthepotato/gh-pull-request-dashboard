@@ -21,12 +21,16 @@ func gh_get_members(ctx context.Context, c *github.Client, owner string) []*Cust
 	}
 
 	users := make([]*Custom_User, 0)
-	userTeams := make(map[string]string)
+	userTeams := make(map[string]*Custom_Team)
 
-	teams := gh_get_teams(ctx, c, owner)
+	teams := read_teams()
 
 	// find team members of each team in org and add it to a map
 	for _, team := range teams {
+
+		if (team.ReviewEnabled == nil) || (!*team.ReviewEnabled) {
+			continue
+		}
 
 		team_members, _, err := c.Teams.ListTeamMembersBySlug(ctx, owner, *team.Slug, nil)
 		if err != nil {
@@ -34,7 +38,7 @@ func gh_get_members(ctx context.Context, c *github.Client, owner string) []*Cust
 		}
 
 		for _, team_member := range team_members {
-			userTeams[*team_member.Login] = *team.Name
+			userTeams[*team_member.Login] = team
 		}
 	}
 
@@ -48,11 +52,10 @@ func gh_get_members(ctx context.Context, c *github.Client, owner string) []*Cust
 		}
 
 		custom_user := new(Custom_User)
-		custom_user.User = *user
-		*custom_user.Team_Name = userTeams[*user.Login]
+		custom_user.User = user
+		custom_user.Team = userTeams[*user.Login]
 
 		users = append(users, custom_user)
-
 		userMap[*user.Login] = custom_user
 	}
 
@@ -74,17 +77,22 @@ func gh_get_teams(ctx context.Context, c *github.Client, owner string) []*Custom
 
 	detailed_teams := make([]*Custom_Team, 0)
 	teamMap := make(map[string]*Custom_Team)
+	default_review := false
+	default_order := 0
 
 	for _, team := range teams {
-		detailed_team, _, err := c.Teams.GetTeamBySlug(ctx, owner, *team.Slug)
+		/* detailed team functionality temporarily removed as it gives us nothing useful (thanks github)
+		 detailed_team, _, err := c.Teams.GetTeamBySlug(ctx, owner, *team.Slug)
 		if err != nil {
 			log.Fatal("Error fetching detailed team info: ", err.Error())
-		}
+		} */
 
 		Custom_Team := new(Custom_Team)
-		Custom_Team.Team = *detailed_team
+		Custom_Team.Team = *team
+		Custom_Team.ReviewEnabled = &default_review
+		Custom_Team.ReviewOrder = &default_order
 
-		teamMap[*detailed_team.Slug] = Custom_Team
+		teamMap[*team.Slug] = Custom_Team
 		detailed_teams = append(detailed_teams, Custom_Team)
 	}
 
@@ -125,18 +133,19 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 				*pr.State = "draft"
 			}
 
-			review_overview := make(map[string]string, 0)
+			review_overview := make(map[string]*string, 0)
+			status_requested := "REQUESTED"
 
 			// first populate requested teams and users. any previous state doesn't matter if you're requested
 			if pr.RequestedTeams != nil {
 				for _, req_team := range pr.RequestedTeams {
-					review_overview[*req_team.Name] = "REQUESTED"
+					review_overview[*req_team.Name] = &status_requested
 				}
 			}
 
 			if pr.RequestedReviewers != nil {
 				for _, req_review := range pr.RequestedReviewers {
-					review_overview[*req_review.Login] = "REQUESTED"
+					review_overview[*req_review.Login] = &status_requested
 				}
 			}
 
@@ -151,7 +160,7 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 				review := reviews[i]
 				_, exists := review_overview[*review.User.Login]
 				if (!exists) && (*pr.User.Login != *review.User.Login) {
-					review_overview[*review.User.Login] = *review.State
+					review_overview[*review.User.Login] = review.State
 				}
 			}
 
@@ -160,10 +169,10 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 			custom_pr.Review_Overview = make([]*Review_Overview, 0)
 
 			for user, state := range review_overview {
-				if (state != "DISMISSED") && (state != "COMMENTED") {
+				if (*state != "DISMISSED") && (*state != "COMMENTED") {
 					review_overview := new(Review_Overview)
-					*review_overview.User = user
-					*review_overview.State = state
+					review_overview.User = &user
+					review_overview.State = state
 
 					custom_pr.Review_Overview = append(custom_pr.Review_Overview, review_overview)
 				}

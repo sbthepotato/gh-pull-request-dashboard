@@ -24,9 +24,8 @@ type Custom_Pull_Request struct {
 }
 
 type Custom_User struct {
-	github.User
-	Team_Name *string `json:"team_name,omitempty"`
-	Team_Slug *string `json:"team_slug,omitempty"`
+	*github.User
+	Team *Custom_Team `json:"team,omitempty"`
 }
 
 type Custom_Team struct {

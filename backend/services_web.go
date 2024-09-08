@@ -11,11 +11,14 @@ import (
 	"github.com/google/go-github/v64/github"
 )
 
-var last_fetched_pr time.Time
+var last_fetched_prs time.Time
 var cached_prs []*Custom_Pull_Request
 
 var last_fetched_teams time.Time
 var cached_teams []*Custom_Team
+
+var last_fetched_members time.Time
+var cached_members []*Custom_User
 
 func hello_go(w http.ResponseWriter, r *http.Request) {
 	setHeaders(&w, "text")
@@ -31,13 +34,13 @@ func get_teams(ctx context.Context, c *github.Client, owner string) http.Handler
 		if refresh == "y" {
 			log.Println("get new teams")
 			cached_teams = gh_get_teams(ctx, c, owner)
+			last_fetched_teams = time.Now()
 		} else if (currentTime.Sub(last_fetched_teams).Hours() < 1) || (len(cached_teams) == 0) {
-			team_map := read_teams()
+			log.Println("get teams from file")
 			cached_teams = make([]*Custom_Team, 0)
-			for _, team := range team_map {
+			for _, team := range read_teams() {
 				cached_teams = append(cached_teams, team)
 			}
-			log.Println("get teams from file")
 		} else {
 			log.Println("get cached teams")
 		}
@@ -96,7 +99,24 @@ func set_teams(w http.ResponseWriter, r *http.Request) {
 func get_members(ctx context.Context, c *github.Client, owner string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		jsonData, err := json.Marshal(gh_get_members(ctx, c, owner))
+		refresh := r.URL.Query().Get("refresh")
+		currentTime := time.Now()
+
+		if refresh == "y" {
+			log.Println("get new members")
+			last_fetched_members = time.Now()
+			cached_members = gh_get_members(ctx, c, owner)
+		} else if (currentTime.Sub(last_fetched_members).Hours() < 1) || (len(cached_members) == 0) {
+			log.Println("read members from file")
+			cached_members = make([]*Custom_User, 0)
+			for _, user := range read_users() {
+				cached_members = append(cached_members, user)
+			}
+		} else {
+			log.Println("use cached users")
+		}
+
+		jsonData, err := json.Marshal(cached_members)
 		if err != nil {
 			log.Fatalf("Error marshalling members to JSON: %e", err)
 		}
@@ -111,10 +131,11 @@ func get_pr_list(ctx context.Context, c *github.Client, owner string, repo strin
 
 		currentTime := time.Now()
 
-		if currentTime.Sub(last_fetched_pr).Minutes() > 30 {
-			log.Print("get new")
+		if currentTime.Sub(last_fetched_prs).Minutes() > 30 {
+			log.Print("get new prs")
+			cached_prs = make([]*Custom_Pull_Request, 0)
 			cached_prs = gh_get_pr_list(ctx, c, owner, repo)
-			last_fetched_pr = time.Now()
+			last_fetched_prs = time.Now()
 		} else {
 			log.Print("use cached")
 		}

@@ -43,7 +43,7 @@
             <td>
               {#if pr.review_overview !== undefined}
                 {#each pr.review_overview as review}
-                  {review.User} <Review state={review.state} /><br />
+                  {review.user} <Review state={review.state} /><br />
                 {/each}
               {/if}
             </td>
