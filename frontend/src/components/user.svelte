@@ -1,13 +1,18 @@
 <script>
   export let user;
+  export let size = "l";
 </script>
 
 <a href={user.html_url} target="_blank" class="container">
-  <img src={user.avatar_url} alt="{user.login} avatar" />
+  {#if size !== "xs"}
+    <img src={user.avatar_url} alt="{user.login} avatar" class={size} />
+  {/if}
   <div class="name-container">
     {#if user.name !== undefined}
       <span class="name">{user.name}</span>
-      <span class="login">@{user.login}</span>
+      {#if size !== "xs"}
+        <span class="login">@{user.login}</span>
+      {/if}
     {:else}
       <span class="big-login">@{user.login}</span>
     {/if}
@@ -16,10 +21,10 @@
 
 <style>
   a.container {
-    margin: 12px;
     display: inline-flex;
     align-items: center;
     color: var(--text);
+    font-size: medium;
   }
 
   a.container:hover {
@@ -31,6 +36,11 @@
     height: 32px;
     border-radius: 50%;
     margin-right: 8px;
+  }
+
+  img.s {
+    width: 20px;
+    height: 20px;
   }
 
   div.name-container {

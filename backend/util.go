@@ -42,7 +42,7 @@ func enable_cors(handler http.Handler) http.Handler {
 }
 
 func load_config() *Config {
-	content, err := os.ReadFile("./config.json")
+	content, err := os.ReadFile("./db/config.json")
 	if err != nil {
 		log.Fatal("Error when opening file: ", err)
 	}

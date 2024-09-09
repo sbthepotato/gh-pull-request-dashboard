@@ -1,6 +1,6 @@
 # private
 config.json
-backend/db/*
+#backend/db/*
 
 # Logs
 logs

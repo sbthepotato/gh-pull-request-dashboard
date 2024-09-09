@@ -8,9 +8,22 @@
   let pr_list = [];
   let pr_stats = { "ready to merge": 0, "Changes Requested": 0 };
 
+  let date_options = {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    hour12: false,
+  };
+
   onMount(() => {
     get_pr_list();
   });
+
+  function convert_date(date_str) {
+    let date = new Date(date_str);
+    return date.toLocaleString("en-us", date_options);
+  }
 
   async function get_pr_list() {
     try {
@@ -34,7 +47,6 @@
 </script>
 
 <section>
-  <h1>Github Pull request overview</h1>
   {#if pr_stats != undefined}
     {#each Object.entries(pr_stats) as [who, count]}
       <PRStats {who} {count} />
@@ -42,7 +54,6 @@
   {/if}
 
   {#if pr_list != undefined && pr_list.length > 0}
-    number of pull requests {pr_list.length}
     <table>
       <tbody>
         {#each pr_list as pr}
@@ -50,18 +61,27 @@
             <td>
               <User user={pr.created_by} />
             </td>
+
             <td>
-              <PRState state={pr.state} />
-              #{pr.number}
-            </td>
-            <td>
+              <PRState state={pr.state} number={pr.number} url={pr.html_url} />
+              &nbsp;
               {pr.title}
-              {#if pr.base.ref != "main"}
-                <br />
-                <span class="base">
-                  {pr.base.ref}
-                </span>
-              {/if}
+
+              <br />
+
+              <span class="under-text">
+                <a href={pr.html_url} class="pr_url">
+                  #{pr.number}
+                </a>
+                - Created {convert_date(pr.created_at)}
+                - Modified {convert_date(pr.updated_at)}
+                {#if pr.base.ref != "main"}
+                  -
+                  <span class="base">
+                    {pr.base.ref}
+                  </span>
+                {/if}
+              </span>
             </td>
             <td>
               {#if pr.awaiting != undefined}
@@ -72,7 +92,7 @@
               {#if pr.review_overview !== undefined}
                 {#each pr.review_overview as review}
                   {#if review.user !== undefined}
-                    {review.user.login}
+                    <User user={review.user} size="xs" />
                   {:else}
                     {review.team.name}
                   {/if}
@@ -84,6 +104,7 @@
         {/each}
       </tbody>
     </table>
+    <p>number of pull requests {pr_list.length}</p>
   {:else}
     <p>No Pull Requests found</p>
   {/if}
@@ -97,15 +118,24 @@
     border: 1px solid var(--border);
   }
 
-  th,
   td {
     text-align: left;
     padding: 8px;
     border-top: 1px solid var(--border);
   }
 
+  span.under-text {
+    font-size: small;
+    color: var(--text-alt);
+    margin-left: 28px;
+  }
+
   span.base {
     color: var(--yellow);
     font-weight: bold;
+  }
+
+  a.pr_url:hover {
+    text-decoration: underline;
   }
 </style>
