@@ -135,9 +135,10 @@ func get_members(ctx context.Context, c *github.Client, owner string) http.Handl
 func get_pr_list(ctx context.Context, c *github.Client, owner string, repo string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
+		refresh := r.URL.Query().Get("refresh")
 		currentTime := time.Now()
 
-		if currentTime.Sub(last_fetched_prs).Minutes() > 30 {
+		if (currentTime.Sub(last_fetched_prs).Minutes() > 5) || (refresh == "y") && (currentTime.Sub(last_fetched_prs).Minutes() > 1) {
 			log.Print("get new prs")
 			cached_prs = make([]*CustomPullRequest, 0)
 			cached_prs = gh_get_pr_list(ctx, c, owner, repo)

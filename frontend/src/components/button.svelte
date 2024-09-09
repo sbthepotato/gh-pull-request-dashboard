@@ -1,18 +1,21 @@
 <script>
   import { goto } from "$app/navigation";
-  export let text;
-  export let action;
-  export let page;
 
-  function button_action() {
-    if (action === "change_page") {
-      goto(page);
+  export let type = "button";
+  export let onClick = () => {};
+  export let to = null;
+
+  function handleClick(event) {
+    if (to) {
+      goto(to);
+    } else {
+      onClick(event);
     }
   }
 </script>
 
-<button on:click={() => button_action()}>
-  {text}
+<button {type} on:click={handleClick}>
+  <slot></slot>
 </button>
 
 <style>

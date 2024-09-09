@@ -5,7 +5,7 @@
   import TeamConfig from "./team_config.svelte";
 </script>
 
-<Button action="change_page" page="/" text="Back to Home" />
+<Button to="/">Back to home</Button>
 
 <TeamConfig />
 <MemberConfig />

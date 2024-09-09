@@ -31,6 +31,11 @@
     color: var(--text-links);
   }
 
+  a.container:hover span.name,
+  a.container:hover span.big-login {
+    text-decoration: underline;
+  }
+
   img {
     width: 32px;
     height: 32px;
