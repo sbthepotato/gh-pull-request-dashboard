@@ -132,8 +132,13 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 		go func() {
 			defer wg.Done()
 
-			if *pr.Draft {
-				*pr.State = "draft"
+			detailed_pr, _, err := c.PullRequests.Get(ctx, owner, repo, *pr.Number)
+			if err != nil {
+				log.Println("error fetching detailed pr info")
+			}
+
+			if *detailed_pr.Draft {
+				*detailed_pr.State = "draft"
 			}
 
 			review := new(Review)
@@ -143,8 +148,8 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 			changes_requested := "Changes Requested"
 
 			// first populate requested teams and users. any previous state doesn't matter if you're requested
-			if pr.RequestedTeams != nil {
-				for _, req_team := range pr.RequestedTeams {
+			if detailed_pr.RequestedTeams != nil {
+				for _, req_team := range detailed_pr.RequestedTeams {
 					review.State = &status_requested
 					review.Team = teams[*req_team.Slug]
 					review.State = &status_requested
@@ -153,8 +158,8 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 				}
 			}
 
-			if pr.RequestedReviewers != nil {
-				for _, req_review := range pr.RequestedReviewers {
+			if detailed_pr.RequestedReviewers != nil {
+				for _, req_review := range detailed_pr.RequestedReviewers {
 					review.User = users[*req_review.Login]
 					review.Team = teams[*review.User.Team.Slug]
 					review.State = &status_requested
@@ -164,7 +169,7 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 				}
 			}
 
-			reviews, _, err := c.PullRequests.ListReviews(ctx, owner, repo, *pr.Number, nil)
+			reviews, _, err := c.PullRequests.ListReviews(ctx, owner, repo, *detailed_pr.Number, nil)
 			if err != nil {
 				log.Fatalf("error fetching pull request reviews")
 			}
@@ -173,11 +178,13 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 			for i := len(reviews) - 1; i >= 0; i-- {
 				//for _, review := range reviews {
 				gh_review := reviews[i]
-				if (!slices.Contains(user_review_list, *gh_review.User.Login)) && (*pr.User.Login != *gh_review.User.Login) {
+				if (!slices.Contains(user_review_list, *gh_review.User.Login)) && (*detailed_pr.User.Login != *gh_review.User.Login) {
 					review := new(Review)
 					user_review_list = append(user_review_list, *gh_review.User.Login)
 					review.User = users[*gh_review.User.Login]
-					review.Team = teams[*review.User.Team.Slug]
+					if review.User.Team != nil {
+						review.Team = teams[*review.User.Team.Slug]
+					}
 					review.State = gh_review.State
 					review_overview = append(review_overview, *review)
 				}
@@ -185,7 +192,7 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 
 			custom_pr := new(CustomPullRequest)
 			custom_pr.CreatedBy = users[*pr.User.Login]
-			custom_pr.PullRequest = pr
+			custom_pr.PullRequest = detailed_pr
 			custom_pr.ReviewOverview = make([]*Review, 0)
 			current_priority := 100
 
