@@ -84,8 +84,10 @@
                 />
                 {pr.changed_files}
               </span>
-              <span class="additions"> ++{pr.additions}</span>
-              <span class="deletions">--{pr.deletions}</span>
+              <span>
+                <span class="additions"> ++{pr.additions}</span>
+                <span class="deletions">--{pr.deletions}</span>
+              </span>
               <span
                 ><Icon
                   name="comment-discussion-16"
@@ -139,6 +141,10 @@
     text-align: left;
     padding: 8px;
     border-top: 1px solid var(--border);
+  }
+
+  td span.tag:first-of-type {
+    margin-left: 12px;
   }
 
   span.tag {
