@@ -47,15 +47,24 @@
   }
 </script>
 
-{#if loading}
-  <div>
-    <p>Loading PR list...</p>
-    <Icon name="mark-github-24" color="rainbow" height="128px" width="128px" />
-  </div>
-{:else}
-  <PRAgg {pr_stats} />
-  <PRTable {pr_list} />
-{/if}
+<section>
+  {#if loading}
+    <div>
+      <p>Loading PR list...</p>
+      <Icon
+        name="mark-github-24"
+        color="rainbow"
+        height="128px"
+        width="128px"
+      />
+    </div>
+  {:else}
+    <PRAgg {pr_stats} />
+    <PRTable {pr_list} />
+  {/if}
+</section>
 
-<Button to="/config">Config</Button>
-<Button onClick={() => get_pr_list(true)}>Hard Refresh PR List</Button>
+<section>
+  <Button to="/config">Config</Button>
+  <Button onClick={() => get_pr_list(true)}>Hard Refresh PR List</Button>
+</section>

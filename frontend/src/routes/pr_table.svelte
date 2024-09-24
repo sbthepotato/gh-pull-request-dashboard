@@ -46,7 +46,6 @@
           </td>
 
           <td>
-            <PRState state={pr.state} />
             &nbsp;
             {pr.title}
             {#if pr.labels != undefined}
@@ -157,7 +156,6 @@
   span.under-text {
     font-size: small;
     color: var(--text-alt);
-    margin-left: 28px;
   }
   span.under-text > span {
     padding: 0px 4px;

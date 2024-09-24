@@ -6,10 +6,13 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/google/go-github/v64/github"
 )
+
+var mu sync.Mutex
 
 var last_fetched_prs time.Time
 var cached_prs []*CustomPullRequest
@@ -27,6 +30,9 @@ func hello_go(w http.ResponseWriter, r *http.Request) {
 
 func get_teams(ctx context.Context, c *github.Client, owner string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+
+		mu.Lock()
+		defer mu.Unlock()
 
 		refresh := r.URL.Query().Get("refresh")
 		currentTime := time.Now()
@@ -57,6 +63,9 @@ func get_teams(ctx context.Context, c *github.Client, owner string) http.Handler
 
 func set_teams(w http.ResponseWriter, r *http.Request) {
 	setHeaders(&w, "text")
+
+	mu.Lock()
+	defer mu.Unlock()
 
 	if r.Method != http.MethodPost {
 		http.Error(w, "invalid request method", http.StatusMethodNotAllowed)
@@ -105,6 +114,9 @@ func set_teams(w http.ResponseWriter, r *http.Request) {
 func get_members(ctx context.Context, c *github.Client, owner string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
+		mu.Lock()
+		defer mu.Unlock()
+
 		refresh := r.URL.Query().Get("refresh")
 		currentTime := time.Now()
 
@@ -134,6 +146,9 @@ func get_members(ctx context.Context, c *github.Client, owner string) http.Handl
 
 func get_pr_list(ctx context.Context, c *github.Client, owner string, repo string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+
+		mu.Lock()
+		defer mu.Unlock()
 
 		refresh := r.URL.Query().Get("refresh")
 		currentTime := time.Now()
