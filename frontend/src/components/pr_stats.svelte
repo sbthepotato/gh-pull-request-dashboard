@@ -18,6 +18,9 @@
   {:else if who === "total"}
     <p>Total Pull Requests</p>
     <Icon name="git-pull-request-16" color="green" {height} {width} />
+  {:else if who === "missing status"}
+    <p>Missing Status</p>
+    <Icon name="file-diff-16" color="red" {height} {width} />
   {:else}
     <p>Waiting on {who}</p>
     <Icon name="dot-fill-16" color="yellow" {height} {width} />

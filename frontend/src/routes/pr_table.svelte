@@ -47,24 +47,26 @@
 
           <td>
             &nbsp;
-            {pr.title}
+            <span class="pr-title">{pr.title}</span>
             {#if pr.labels != undefined}
-              {#each pr.labels as label}
-                <span
-                  class="tag"
-                  style="background-color:#{label.color}; color: {getTextLuminance(
-                    label.color
-                  )}"
-                >
-                  {label.name}
-                </span>
-                &nbsp;
-              {/each}
+              <span class="tags">
+                {#each pr.labels as label}
+                  <span
+                    class="tag"
+                    style="background-color:#{label.color}; color: {getTextLuminance(
+                      label.color
+                    )}"
+                  >
+                    {label.name}
+                  </span>
+                  &nbsp;
+                {/each}
+              </span>
             {/if}
             <br />
             <span class="under-text">
               <span>
-                <a href={pr.html_url} class="pr_url">
+                <a href={pr.html_url} target="_blank" class="pr_url">
                   #{pr.number}
                 </a>
               </span>
@@ -142,7 +144,7 @@
     border-top: 1px solid var(--border);
   }
 
-  td span.tag:first-of-type {
+  td span.tags {
     margin-left: 12px;
   }
 
@@ -151,6 +153,7 @@
     padding: 2px 8px;
     font-size: small;
     font-weight: bold;
+    white-space: nowrap;
   }
 
   span.under-text {

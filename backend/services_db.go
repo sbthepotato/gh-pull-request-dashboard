@@ -8,53 +8,61 @@ import (
 )
 
 // Write users to file in db/users.json.
-func write_users(users map[string]*CustomUser) {
+func write_users(users map[string]*CustomUser) error {
 	jsonData, err := json.Marshal(users)
 	if err != nil {
-		log.Fatalln("error marshalling users to JSON: ", err)
+		log.Println("error marshalling users to JSON: ", err)
+		return err
 	}
 
 	file, err := os.Create("db/users.json")
 	if err != nil {
-		log.Fatalln("Error creating users file: ", err)
+		log.Println("Error creating users file: ", err)
+		return err
 	}
 	defer file.Close()
 
 	_, err = file.Write(jsonData)
 	if err != nil {
-		log.Fatalln("Error writing user JSON to file: ", err)
+		log.Println("Error writing user JSON to file: ", err)
+		return err
 	}
+
+	return nil
 }
 
 // Read users from db/users.json.
 // Returns a map where the key is the user.login and the value is the custom user struct
-func read_users() map[string]*CustomUser {
+func read_users() (map[string]*CustomUser, error) {
 	file, err := os.Open("db/users.json")
 	if err != nil {
-		log.Println("error reading user file: ", err)
-		return nil
+		log.Println("error reading user file: ", err.Error())
+		return nil, err
 	}
 
 	jsonData, err := io.ReadAll(file)
 	if err != nil {
-		log.Fatalln("Error reading user file: ", err)
+		log.Println("Error reading user file: ", err.Error())
+		return nil, err
 	}
 
 	UserMap := make(map[string]*CustomUser)
 
 	err = json.Unmarshal(jsonData, &UserMap)
 	if err != nil {
-		log.Fatalln("Error unmarshalling users from Json ", err)
+		log.Println("Error unmarshalling users from Json ", err.Error())
+		return nil, err
 	}
 
-	return UserMap
+	return UserMap, nil
 }
 
 // Write teams to file in db/teams.json
-func write_teams(teams map[string]*CustomTeam, active_only bool) {
+func write_teams(teams map[string]*CustomTeam, active_only bool) error {
 	jsonData, err := json.Marshal(teams)
 	if err != nil {
-		log.Fatalln("Error marshalling teams to JSON: ", err.Error())
+		log.Println("Error marshalling teams to JSON: ", err.Error())
+		return err
 	}
 
 	var file *os.File
@@ -64,20 +72,25 @@ func write_teams(teams map[string]*CustomTeam, active_only bool) {
 	} else {
 		file, err = os.Create("db/teams.json")
 	}
+
 	if err != nil {
-		log.Fatalln("Error creating teams file: ", err.Error())
+		log.Println("Error creating teams file: ", err.Error())
+		return err
 	}
 	defer file.Close()
 
 	_, err = file.Write(jsonData)
 	if err != nil {
-		log.Fatalln("error writing team JSON to file: ", err)
+		log.Println("error writing team JSON to file: ", err.Error())
+		return err
 	}
+
+	return nil
 }
 
 // Read users from db/teams.json.
 // Returns a map where the team.slug is the key and the value is the custom team struct
-func read_teams(active_only bool) map[string]*CustomTeam {
+func read_teams(active_only bool) (map[string]*CustomTeam, error) {
 	var file *os.File
 	var err error
 
@@ -87,22 +100,24 @@ func read_teams(active_only bool) map[string]*CustomTeam {
 		file, err = os.Open("db/teams.json")
 	}
 	if err != nil {
-		log.Println("error reading team file", err)
-		return nil
+		log.Println("error reading team file", err.Error())
+		return nil, err
 	}
 
 	jsonData, err := io.ReadAll(file)
 	if err != nil {
-		log.Fatalln("Error reading team file: ", err)
+		log.Println("Error reading team file: ", err.Error())
+		return nil, err
 	}
 
 	teamMap := make(map[string]*CustomTeam)
 
 	err = json.Unmarshal(jsonData, &teamMap)
 	if err != nil {
-		log.Fatalln("Error unmarshalling teams from Json ", err)
+		log.Println("Error unmarshalling teams from Json ", err.Error())
+		return nil, err
 	}
 
-	return teamMap
+	return teamMap, nil
 
 }

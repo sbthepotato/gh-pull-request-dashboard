@@ -9,7 +9,7 @@
   let loading = false;
   let url = "http://localhost:8080/get_pr_list";
   let pr_list = [];
-  let pr_stats = { total: 0, "ready to merge": 0, "Changes Requested": 0 };
+  let pr_stats = {};
 
   onMount(() => {
     get_pr_list();
@@ -32,8 +32,10 @@
       if (response.ok) {
         pr_stats["total"] = pr_list.length;
         pr_list.forEach((pull) => {
-          if (pull.awaiting === undefined) {
+          if (pull.awaiting === "APPROVED") {
             pr_stats["ready to merge"] = pr_stats["ready to merge"] + 1 || 1;
+          } else if (pull.awaiting === undefined) {
+            pr_stats["missing status"] = pr_stats["missing status"] + 1 || 1;
           } else {
             pr_stats[pull.awaiting] = pr_stats[pull.awaiting] + 1 || 1;
           }
