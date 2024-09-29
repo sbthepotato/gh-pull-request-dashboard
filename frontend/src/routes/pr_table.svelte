@@ -107,7 +107,18 @@
           </td>
           <td>
             {#if pr.awaiting != undefined}
-              {pr.awaiting}
+              {#if pr.awaiting === "APPROVED"}
+                <Icon
+                  name="check-16"
+                  height="16px"
+                  width="16px"
+                  color="green"
+                />
+              {:else}
+                {pr.awaiting}
+              {/if}
+            {:else}
+              <Icon name="alert-16" height="16px" width="16px" color="red" />
             {/if}
           </td>
           <td>

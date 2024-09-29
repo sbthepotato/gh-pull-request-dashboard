@@ -1,5 +1,5 @@
 <script>
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
 
   import Button from "../components/button.svelte";
   import Icon from "../components/icon.svelte";
@@ -7,6 +7,9 @@
   import PRAgg from "./pr_aggregation.svelte";
 
   let loading = false;
+  let auto_reload = false;
+  let reload_interval;
+
   let url = "http://localhost:8080/get_pr_list";
   let pr_list = [];
   let pr_stats = {};
@@ -47,6 +50,16 @@
       loading = false;
     }
   }
+
+  $: if (auto_reload) {
+    reload_interval = setInterval(get_pr_list, 600000);
+  } else {
+    clearInterval(reload_interval);
+  }
+
+  onDestroy(() => {
+    clearInterval(reload_interval);
+  });
 </script>
 
 <section>
@@ -69,4 +82,14 @@
 <section>
   <Button to="/config">Config</Button>
   <Button onClick={() => get_pr_list(true)}>Hard Refresh PR List</Button>
+  <label>
+    <input type="checkbox" bind:checked={auto_reload} />
+    Auto refresh
+  </label>
 </section>
+
+<style>
+  section {
+    margin: 8px;
+  }
+</style>
