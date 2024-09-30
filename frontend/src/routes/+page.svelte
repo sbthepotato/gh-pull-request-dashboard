@@ -11,6 +11,7 @@
   let reload_interval;
 
   let url = "http://localhost:8080/get_pr_list";
+  let err = "";
   let pr_list = [];
   let pr_stats = {};
 
@@ -21,6 +22,7 @@
   async function get_pr_list(refresh) {
     try {
       loading = true;
+      err = "";
       pr_list = [];
       pr_stats = { total: 0, "ready to merge": 0, "Changes Requested": 0 };
 
@@ -30,9 +32,8 @@
 
       const response = await fetch(url);
 
-      pr_list = await response.json();
-
       if (response.ok) {
+        pr_list = await response.json();
         pr_stats["total"] = pr_list.length;
         pr_list.forEach((pull) => {
           if (pull.awaiting === "APPROVED") {
@@ -43,9 +44,11 @@
             pr_stats[pull.awaiting] = pr_stats[pull.awaiting] + 1 || 1;
           }
         });
+      } else {
+        throw new Error(await response.text());
       }
     } catch (error) {
-      console.error("Error fetching data from the backend:", error);
+      err = error.message;
     } finally {
       loading = false;
     }
@@ -63,7 +66,9 @@
 </script>
 
 <section>
-  {#if loading}
+  {#if err !== ""}
+    {err}
+  {:else if loading}
     <div>
       <p>Loading PR list...</p>
       <Icon

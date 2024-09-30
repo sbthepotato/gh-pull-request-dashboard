@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -41,7 +40,6 @@ func get_teams(ctx context.Context, c *github.Client, owner string) http.Handler
 		currentTime := time.Now()
 
 		if refresh == "y" {
-			log.Println("get new teams")
 			cached_teams, err = gh_get_teams(ctx, c, owner)
 
 			if err != nil {
@@ -53,7 +51,6 @@ func get_teams(ctx context.Context, c *github.Client, owner string) http.Handler
 
 		} else if (currentTime.Sub(last_fetched_teams).Hours() < 1) || (len(cached_teams) == 0) {
 
-			log.Println("get teams from file")
 			cached_teams = make([]*CustomTeam, 0)
 
 			teams, err := read_teams(false)
@@ -101,7 +98,8 @@ func set_teams(w http.ResponseWriter, r *http.Request) {
 
 	err = json.Unmarshal(body, &team_data)
 	if err != nil {
-		log.Println("error unmarshaling team data: ", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	team_map, err := read_teams(false)
@@ -143,7 +141,6 @@ func get_members(ctx context.Context, c *github.Client, owner string) http.Handl
 		currentTime := time.Now()
 
 		if refresh == "y" {
-			log.Println("get new members")
 			last_fetched_members = time.Now()
 			cached_members, err = gh_get_members(ctx, c, owner)
 			if err != nil {
@@ -152,7 +149,6 @@ func get_members(ctx context.Context, c *github.Client, owner string) http.Handl
 			}
 
 		} else if (currentTime.Sub(last_fetched_members).Hours() < 1) || (len(cached_members) == 0) {
-			log.Println("read members from file")
 			cached_members = make([]*CustomUser, 0)
 			users, err := read_users()
 			if err != nil {
@@ -163,8 +159,6 @@ func get_members(ctx context.Context, c *github.Client, owner string) http.Handl
 			for _, user := range users {
 				cached_members = append(cached_members, user)
 			}
-		} else {
-			log.Println("use cached users")
 		}
 
 		jsonData, err := json.Marshal(cached_members)
@@ -187,8 +181,7 @@ func get_pr_list(ctx context.Context, c *github.Client, owner string, repo strin
 		refresh := r.URL.Query().Get("refresh")
 		currentTime := time.Now()
 
-		if (currentTime.Sub(last_fetched_prs).Minutes() > 10) || (refresh == "y") && (currentTime.Sub(last_fetched_prs).Minutes() > 1) {
-			log.Print("get new prs")
+		if (currentTime.Sub(last_fetched_prs).Minutes() > 10) || (refresh == "y") && (currentTime.Sub(last_fetched_prs).Minutes() > 2) {
 			cached_prs = make([]*CustomPullRequest, 0)
 
 			prs, err := gh_get_pr_list(ctx, c, owner, repo)
@@ -199,8 +192,6 @@ func get_pr_list(ctx context.Context, c *github.Client, owner string, repo strin
 
 			cached_prs = prs
 			last_fetched_prs = time.Now()
-		} else {
-			log.Print("use cached")
 		}
 
 		jsonData, err := json.Marshal(cached_prs)

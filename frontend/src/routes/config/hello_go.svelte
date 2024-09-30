@@ -1,35 +1,44 @@
 <script>
-  let answer;
+  let answer = "";
+  let err = "";
 
-  async function hellogo() {
+  async function hello_go() {
     try {
+      answer = "";
+      err = "";
+
       const response = await fetch("http://localhost:8080/config/hello_go");
 
-      const data = await response;
-
-      console.log(data);
-
-      answer = data;
+      if (response.ok) {
+        answer = await response.text();
+      } else {
+        throw new Error(await response.text());
+      }
     } catch (error) {
-      console.error("Error fetching data from the backend:", error);
-      answer = "Error connecting to the backend";
+      err = error.message;
     }
   }
 </script>
 
 <h2>Connection test</h2>
-<button on:click={hellogo}>Say hello to the backend</button>
+<button on:click={hello_go}>Say hello to the backend</button>
 
-{#if answer !== undefined}
-  <p>
-    Backend says:
+<p>
+  {#if err}
     <br />
-    <span>{answer}</span>
-  </p>
-{/if}
+    <span class="bad">{err}</span>
+  {:else if answer}
+    <br />
+    <span class="good">{answer}</span>
+  {/if}
+</p>
 
 <style>
-  span {
-    color: green;
+  span.good {
+    color: var(--green);
+  }
+
+  span.bad {
+    color: var(--red);
   }
 </style>

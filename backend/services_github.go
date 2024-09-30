@@ -21,7 +21,6 @@ func gh_get_members(ctx context.Context, c *github.Client, owner string) ([]*Cus
 	// get members of org
 	members, _, err := c.Organizations.ListMembers(ctx, owner, opt)
 	if err != nil {
-		log.Fatalf("Error fetching contributors: %e", err)
 		return nil, err
 	}
 
@@ -42,7 +41,6 @@ func gh_get_members(ctx context.Context, c *github.Client, owner string) ([]*Cus
 
 		team_members, _, err := c.Teams.ListTeamMembersBySlug(ctx, owner, *team.Slug, nil)
 		if err != nil {
-			log.Fatalf("error fetching team members: %e", err)
 			return nil, err
 		}
 
@@ -57,7 +55,6 @@ func gh_get_members(ctx context.Context, c *github.Client, owner string) ([]*Cus
 	for _, member := range members {
 		user, _, err := c.Users.Get(ctx, *member.Login)
 		if err != nil {
-			log.Fatalf("Error fetching user: %e", err)
 			return nil, err
 		}
 
@@ -85,7 +82,6 @@ func gh_get_teams(ctx context.Context, c *github.Client, owner string) ([]*Custo
 
 	teams, _, err := c.Teams.ListTeams(ctx, owner, opt)
 	if err != nil {
-		log.Fatalln("Error fetching teams: ", err.Error())
 		return nil, err
 	}
 
@@ -259,7 +255,7 @@ func process_pr(pr_channel chan<- *CustomPullRequest, wg *sync.WaitGroup, ctx co
 			custom_pr.ReviewOverview = append(custom_pr.ReviewOverview, review)
 		}
 
-		if custom_pr.Awaiting == nil && approved_count > 1 {
+		if custom_pr.Awaiting == nil && approved_count >= 1 {
 			custom_pr.Awaiting = &status_approved
 		}
 	}

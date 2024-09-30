@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
 
   let teams = [];
+  let err = "";
 
   onMount(() => {
     get_teams();
@@ -9,6 +10,9 @@
 
   async function get_teams(refresh) {
     try {
+      teams = [];
+      err = "";
+
       let url = "http://localhost:8080/config/get_teams";
 
       if (refresh) {
@@ -17,9 +21,13 @@
 
       const response = await fetch(url);
 
-      teams = await response.json();
+      if (response.ok) {
+        teams = await response.json();
+      } else {
+        throw new Error(await response.text());
+      }
     } catch (error) {
-      console.error("Error fetching data from the backend:", error);
+      err = error.message;
     }
   }
 
@@ -39,22 +47,23 @@
         body: JSON.stringify(data),
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to save teams");
-      }
-
-      const result = await response;
+      result = await response.text();
     } catch (error) {
-      console.error(error);
+      err = error.message;
     }
   }
 </script>
 
 <h2>Team Configuration</h2>
+
 <button on:click={() => get_teams(true)}>Hard refresh team list</button>
 <button on:click={() => set_teams()}>Save Teams</button>
 
-{#if teams.length > 0}
+{#if err !== ""}
+  <p>
+    {err}
+  </p>
+{:else if teams.length > 0}
   <p>{teams.length} teams found</p>
   <table>
     <thead>

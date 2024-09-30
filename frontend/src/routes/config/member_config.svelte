@@ -3,9 +3,10 @@
   import User from "../../components/user.svelte";
 
   let members = [];
+  let err = "";
 
-  let team_members = { none: [] };
-  let teams = [{ name: "none" }];
+  let team_members = {};
+  let teams = [];
 
   onMount(() => {
     get_members();
@@ -13,6 +14,11 @@
 
   async function get_members(refresh) {
     try {
+      err = "";
+      members = [];
+      team_members = { none: [] };
+      teams = [{ name: "none" }];
+
       let url = "http://localhost:8080/config/get_members";
 
       if (refresh) {
@@ -21,9 +27,8 @@
 
       const response = await fetch(url);
 
-      members = await response.json();
-
       if (response.ok) {
+        members = await response.json();
         members.forEach((user) => {
           if (user.team === undefined) {
             team_members["none"].push(user);
@@ -34,9 +39,11 @@
             teams.push(user.team);
           }
         });
+      } else {
+        throw new Error(await response.text());
       }
     } catch (error) {
-      console.error("Error fetching data from the backend:", error);
+      err = error.message;
     }
   }
 </script>
@@ -44,7 +51,11 @@
 <h2>Member Configuration</h2>
 <button on:click={() => get_members(true)}>Hard refresh member list</button>
 
-{#if members.length > 0}
+{#if err !== ""}
+  <p>
+    {err}
+  </p>
+{:else if members.length > 0}
   <p>{members.length} members found</p>
   {#each teams as team}
     <div class="team-container">

@@ -44,13 +44,13 @@ func enable_cors(handler http.Handler) http.Handler {
 func load_config() *Config {
 	content, err := os.ReadFile("./db/config.json")
 	if err != nil {
-		log.Fatal("Error when opening file: ", err)
+		log.Fatal("Error when opening config: ", err)
 	}
 
 	var payload Config
 	err = json.Unmarshal(content, &payload)
 	if err != nil {
-		log.Fatal("Error during Unmarshal(): ", err)
+		log.Fatal("Error during Unmarshal of config: ", err)
 	}
 
 	return &payload
