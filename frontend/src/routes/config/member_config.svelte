@@ -19,7 +19,7 @@
       team_members = { none: [] };
       teams = [{ name: "none" }];
 
-      let url = "http://localhost:8080/config/get_members";
+      let url = "api/config/get_members";
 
       if (refresh) {
         url = url + "?refresh=y";

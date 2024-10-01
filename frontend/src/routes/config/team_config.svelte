@@ -13,7 +13,7 @@
       teams = [];
       err = "";
 
-      let url = "http://localhost:8080/config/get_teams";
+      let url = "api/config/get_teams";
 
       if (refresh) {
         url = url + "?refresh=y";
@@ -39,7 +39,7 @@
     }));
 
     try {
-      const response = await fetch("http://localhost:8080/config/set_teams", {
+      const response = await fetch("api/config/set_teams", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

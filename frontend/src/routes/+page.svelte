@@ -10,7 +10,7 @@
   let auto_reload = false;
   let reload_interval;
 
-  let url = "http://localhost:8080/get_pr_list";
+  let url = "api/get_pr_list";
   let err = "";
   let pr_list = [];
   let pr_stats = {};
