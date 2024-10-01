@@ -196,7 +196,9 @@ func process_pr(pr_channel chan<- *CustomPullRequest, wg *sync.WaitGroup, ctx co
 	if detailed_pr.RequestedReviewers != nil {
 		for _, req_review := range detailed_pr.RequestedReviewers {
 			review.User = users[*req_review.Login]
-			review.Team = teams[*review.User.Team.Slug]
+			if review.User.Team != nil {
+				review.Team = teams[*review.User.Team.Slug]
+			}
 			review.State = &status_requested
 
 			review_overview = append(review_overview, *review)

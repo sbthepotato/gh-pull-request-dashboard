@@ -3,6 +3,7 @@
   "version": "2024.0",
   "scripts": {
     "start": "concurrently \"npm run dev --prefix frontend\" \"cd backend && go run .\"",
+    "prod": "concurrently \"npm run dev --prefix frontend\" \"cd backend && .\\gh-pull-request-dashboard.exe\"",
     "dev": "npm run dev --prefix frontend",
     "backend": "cd backend && go run ."
   },
