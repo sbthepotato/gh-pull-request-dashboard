@@ -15,7 +15,7 @@ func main() {
 	http.HandleFunc("/config/hello_go", hello_go)
 	http.HandleFunc("/config/get_teams", get_teams(ctx, client, config.Owner))
 	http.HandleFunc("/config/get_members", get_members(ctx, client, config.Owner))
-	http.HandleFunc("/get_pr_list", get_pr_list(ctx, client, config.Owner, config.Repo))
+	http.HandleFunc("/dashboard/get_pr_list", get_pr_list(ctx, client, config.Owner, config.Repo))
 
 	// POSTS
 	http.HandleFunc("/config/set_teams", set_teams)

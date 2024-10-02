@@ -3,7 +3,8 @@
   "version": "2024.0",
   "scripts": {
     "start": "concurrently \"npm run dev --prefix frontend\" \"cd backend && go run .\"",
-    "prod": "concurrently \"npm run preview --prefix frontend\" \"cd backend && .\\gh-pull-request-dashboard.exe\"",
+    "lin": "concurrently \"npm run preview --prefix frontend\" \"cd backend && .\\gh-pull-request-dashboard\"",
+    "win": "concurrently \"npm run preview --prefix frontend\" \"cd backend && .\\gh-pull-request-dashboard.exe\"",
     "build": "npm run build --prefix frontend",
     "dev": "npm run dev --prefix frontend",
     "backend": "cd backend && go run ."
