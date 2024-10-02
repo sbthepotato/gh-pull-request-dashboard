@@ -8,7 +8,7 @@
 <img
   {height}
   {width}
-  src="../../src/assets/icons/{name}.svg"
+  src="/icons/{name}.svg"
   alt={name}
   class={color}
 />
