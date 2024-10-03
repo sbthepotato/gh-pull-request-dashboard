@@ -1,25 +1,27 @@
 <script>
-  import { goto } from "$app/navigation";
+	import { goto } from "$app/navigation";
 
-  export let type = "button";
-  export let onClick = () => {};
-  export let to = null;
+	export let type = "button";
+	export let onClick = () => {};
+	export let to = null;
 
-  function handleClick(event) {
-    if (to) {
-      goto(to);
-    } else {
-      onClick(event);
-    }
-  }
+	const url_prefix = import.meta.env.VITE_URL_PATH;
+
+	function handleClick(event) {
+		if (to) {
+			goto(url_prefix + to);
+		} else {
+			onClick(event);
+		}
+	}
 </script>
 
 <button {type} on:click={handleClick}>
-  <slot></slot>
+	<slot></slot>
 </button>
 
 <style>
-  button {
-    display: inline;
-  }
+	button {
+		display: inline;
+	}
 </style>

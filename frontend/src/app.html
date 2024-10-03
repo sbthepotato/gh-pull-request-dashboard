@@ -1,53 +1,14 @@
 <!DOCTYPE html>
-<style>
-  @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&family=IBM+Plex+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&family=SUSE:wght@100..800&family=Ubuntu+Mono:ital,wght@0,400;0,700;1,400;1,700&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap");
-  :root {
-    --page-bg: #0d1117;
-    --border: #3d444d;
-    --content-bg-alt: #151b23;
-    --text: #f0f6fc;
-    --text-alt: #7c828b;
-    --blue-bg: #111d2f;
-    --text-blue: #3d84de;
-    --text-links: #4493f8;
-    --border-blue: #1f6feb;
-    --red: #f85149;
-    --green: #3fb950;
-    --yellow: #d29922;
-    --grey: #9198a1;
-  }
-
-  html {
-    /* font-family: 'Comfortaa', cursive, serif; */
-    font-family: "IBM Plex Sans", sans-serif;
-    text-rendering: optimizeLegibility;
-    width: 100%;
-    font-smooth: always;
-    scroll-behavior: smooth;
-    text-align: center;
-    background: var(--page-bg);
-    color: var(--text);
-  }
-
-  a {
-    color: var(--text-links);
-    text-decoration: none;
-  }
-
-  a:visited {
-    color: var(--text-links);
-    text-decoration: none;
-  }
-</style>
 
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" href="%sveltekit.assets%/favicon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    %sveltekit.head%
-  </head>
-  <body data-sveltekit-preload-data="hover">
-    <div style="display: contents">%sveltekit.body%</div>
-  </body>
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" href="%sveltekit.assets%/file-diff-red.svg" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>PR Dashboard</title>
+		%sveltekit.head%
+	</head>
+	<body data-sveltekit-preload-data="hover">
+		<div style="display: contents">%sveltekit.body%</div>
+	</body>
 </html>
