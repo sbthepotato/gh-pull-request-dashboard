@@ -93,6 +93,8 @@
 					<td>
 						<input
 							type="number"
+							min="0"
+							max={teams.length}
 							bind:value={team.review_order}
 							disabled={!team.review_enabled} />
 					</td>

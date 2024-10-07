@@ -14,7 +14,7 @@ import (
 var mu sync.Mutex
 
 var last_fetched_prs time.Time
-var cached_prs []*CustomPullRequest
+var cached_prs *PullRequestInfo
 
 var last_fetched_teams time.Time
 var cached_teams []*CustomTeam
@@ -182,7 +182,7 @@ func get_pr_list(ctx context.Context, c *github.Client, owner string, repo strin
 		currentTime := time.Now()
 
 		if (currentTime.Sub(last_fetched_prs).Minutes() > 10) || (refresh == "y") && (currentTime.Sub(last_fetched_prs).Minutes() > 2) {
-			cached_prs = make([]*CustomPullRequest, 0)
+			cached_prs = new(PullRequestInfo)
 
 			prs, err := gh_get_pr_list(ctx, c, owner, repo)
 			if err != nil {

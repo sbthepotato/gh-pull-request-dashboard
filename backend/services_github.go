@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"slices"
+	"sort"
 	"sync"
 
 	"github.com/google/go-github/v64/github"
@@ -108,7 +109,7 @@ func gh_get_teams(ctx context.Context, c *github.Client, owner string) ([]*Custo
 /*
 get list of github pull requests and process them with review information
 */
-func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo string) ([]*CustomPullRequest, error) {
+func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo string) (*PullRequestInfo, error) {
 
 	opts := &github.PullRequestListOptions{
 		State:       "open",
@@ -155,7 +156,31 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 		prs[*processed_pr.Index] = processed_pr
 	}
 
-	return prs, nil
+	result := new(PullRequestInfo)
+
+	// sort the list of teams for the aggregation banner
+	if teams != nil {
+		slugs := make([]string, 0, len(teams))
+
+		for slug := range teams {
+			slugs = append(slugs, slug)
+		}
+
+		sort.SliceStable(slugs, func(i, j int) bool {
+			return *teams[slugs[i]].ReviewOrder < *teams[slugs[j]].ReviewOrder
+		})
+
+		sorted_teams := make([]*CustomTeam, 0)
+		for _, slug := range slugs {
+			sorted_teams = append(sorted_teams, teams[slug])
+		}
+
+		result.ReviewTeams = sorted_teams
+	}
+
+	result.PullRequests = prs
+
+	return result, nil
 
 }
 
@@ -184,7 +209,7 @@ func process_pr(pr_channel chan<- *CustomPullRequest, wg *sync.WaitGroup, ctx co
 	team_other := "OTHER"
 
 	if teams == nil {
-		team_other = "Review"
+		team_other = "review"
 	}
 
 	// first populate requested teams and users. any previous state doesn't matter if you're requested
@@ -192,7 +217,7 @@ func process_pr(pr_channel chan<- *CustomPullRequest, wg *sync.WaitGroup, ctx co
 		for _, req_team := range detailed_pr.RequestedTeams {
 			review.State = &status_requested
 
-			// if the team map isnt available, just use what we have
+			// if the team map isn't available, just use what we have
 			if val, ok := teams[*req_team.Slug]; ok {
 				review.Team = val
 			} else {
@@ -210,7 +235,7 @@ func process_pr(pr_channel chan<- *CustomPullRequest, wg *sync.WaitGroup, ctx co
 	if detailed_pr.RequestedReviewers != nil {
 		for _, req_review := range detailed_pr.RequestedReviewers {
 
-			// if the user map isnt available, just use what we have
+			// if the user map isn't available, just use what we have
 			if val, ok := users[*req_review.Login]; ok {
 				review.User = val
 			} else {

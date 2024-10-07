@@ -41,7 +41,7 @@
 		<tbody>
 			{#each pr_list as pr}
 				<tr>
-					<td>
+					<td class="created_by">
 						{#if pr.created_by !== undefined}
 							<User user={pr.created_by} />
 						{:else}
@@ -49,7 +49,7 @@
 						{/if}
 					</td>
 
-					<td>
+					<td class="title">
 						<span class="pr-title">{pr.title}</span>
 						{#if pr.labels != undefined}
 							<span class="tags">
@@ -106,10 +106,10 @@
 							{/if}
 						</span>
 					</td>
-					<td>
+					<td class="awaiting">
 						<PrAwaiting awaiting={pr.awaiting} />
 					</td>
-					<td>
+					<td class="review_overview">
 						{#if pr.review_overview !== undefined}
 							{#each pr.review_overview as review}
 								{#if review.user !== undefined}
@@ -210,5 +210,9 @@
 
 	a.pr_url:hover {
 		text-decoration: underline;
+	}
+
+	td.awaiting {
+		min-width: 100px;
 	}
 </style>

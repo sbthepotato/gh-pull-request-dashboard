@@ -12,7 +12,7 @@
 
 	let url = "api/dashboard/get_pr_list";
 	let err = "";
-	let pr_list = [];
+	let pr_list = {};
 	let pr_stats = {};
 
 	onMount(() => {
@@ -23,7 +23,7 @@
 		try {
 			loading = true;
 			err = "";
-			pr_list = [];
+			pr_list = {};
 			pr_stats = { total: 0, "ready to merge": 0, "Changes Requested": 0 };
 
 			if (refresh) {
@@ -34,8 +34,18 @@
 
 			if (response.ok) {
 				pr_list = await response.json();
-				pr_stats["total"] = pr_list.length;
-				pr_list.forEach((pull) => {
+				pr_stats["total"] = pr_list.pull_requests.length;
+
+				// make sure the review teams are in the correct order always
+				if (pr_list.review_teams !== undefined) {
+					pr_list.review_teams.forEach((team) => {
+						pr_stats[team.name] = 0;
+					});
+				} else {
+					pr_stats[review] = 0;
+				}
+
+				pr_list.pull_requests.forEach((pull) => {
 					if (pull.awaiting === "APPROVED") {
 						pr_stats["ready to merge"] = pr_stats["ready to merge"] + 1 || 1;
 					} else if (pull.awaiting === undefined) {
@@ -79,7 +89,7 @@
 		</div>
 	{:else}
 		<PRAgg {pr_stats} />
-		<PRTable {pr_list} />
+		<PRTable pr_list={pr_list.pull_requests} />
 	{/if}
 </section>
 
