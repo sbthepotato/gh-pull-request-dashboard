@@ -1,4 +1,6 @@
 <script>
+	import Button from "../../components/button.svelte";
+
 	let answer = "";
 	let err = "";
 
@@ -21,7 +23,7 @@
 </script>
 
 <h2>Connection test</h2>
-<button on:click={hello_go}>Say hello to the backend</button>
+<Button color="green" onClick={hello_go}>Say hello to the backend</Button>
 
 <p>
 	{#if err}

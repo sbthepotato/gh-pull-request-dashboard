@@ -1,6 +1,7 @@
 <script>
 	import { onMount } from "svelte";
 	import User from "../../components/user.svelte";
+	import Button from "../../components/button.svelte";
 
 	let members = [];
 	let err = "";
@@ -49,7 +50,8 @@
 </script>
 
 <h2>Member Configuration</h2>
-<button on:click={() => get_members(true)}>Hard refresh member list</button>
+<Button color="green" onClick={() => get_members(true)}
+	>Hard refresh member list</Button>
 
 {#if err !== ""}
 	<p>

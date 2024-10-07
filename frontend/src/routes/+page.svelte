@@ -65,7 +65,7 @@
 	});
 </script>
 
-<section>
+<section class="pr-table">
 	{#if err !== ""}
 		{err}
 	{:else if loading}
@@ -83,9 +83,10 @@
 	{/if}
 </section>
 
-<section>
-	<Button to="/config">Config</Button>
-	<Button onClick={() => get_pr_list(true)}>Hard Refresh PR List</Button>
+<section class="buttons">
+	<Button color="grey" to="/config">Config</Button>
+	<Button color="green" onClick={() => get_pr_list(true)}
+		>Hard Refresh PR List</Button>
 	<label>
 		<input type="checkbox" bind:checked={auto_reload} />
 		Auto refresh
@@ -93,7 +94,7 @@
 </section>
 
 <style>
-	section {
-		margin: 8px;
+	section.pr-table {
+		margin-bottom: 32px;
 	}
 </style>

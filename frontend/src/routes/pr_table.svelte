@@ -1,6 +1,6 @@
 <script>
 	import Review from "../components/review.svelte";
-	import PRState from "../components/pr_state.svelte";
+	import PrAwaiting from "../components/pr_awaiting.svelte";
 	import User from "../components/user.svelte";
 	import Icon from "../components/icon.svelte";
 
@@ -42,7 +42,11 @@
 			{#each pr_list as pr}
 				<tr>
 					<td>
-						<User user={pr.created_by} />
+						{#if pr.created_by !== undefined}
+							<User user={pr.created_by} />
+						{:else}
+							<User user={pr.user} />
+						{/if}
 					</td>
 
 					<td>
@@ -50,6 +54,7 @@
 						{#if pr.labels != undefined}
 							<span class="tags">
 								{#each pr.labels as label}
+									&nbsp;
 									<span
 										class="tag"
 										style="background-color:#{label.color}; color: {getTextLuminance(
@@ -90,6 +95,7 @@
 									name="comment-discussion-16"
 									height="12px"
 									width="12px"
+									&nbsp;
 									color="grey" />
 								{pr.comments}
 							</span>
@@ -101,27 +107,17 @@
 						</span>
 					</td>
 					<td>
-						{#if pr.awaiting != undefined}
-							{#if pr.awaiting === "APPROVED"}
-								<Icon
-									name="check-16"
-									height="16px"
-									width="16px"
-									color="green" />
-							{:else}
-								{pr.awaiting}
-							{/if}
-						{:else}
-							<Icon name="alert-16" height="16px" width="16px" color="red" />
-						{/if}
+						<PrAwaiting awaiting={pr.awaiting} />
 					</td>
 					<td>
 						{#if pr.review_overview !== undefined}
 							{#each pr.review_overview as review}
 								{#if review.user !== undefined}
 									<User user={review.user} size="xs" />
-								{:else}
+								{:else if review.team !== undefined}
 									{review.team.name}
+								{:else}
+									UNKNOWN
 								{/if}
 								<Review state={review.state} /><br />
 							{/each}
@@ -137,19 +133,49 @@
 
 <style>
 	table {
-		border-collapse: collapse;
 		width: 100%;
-		border-radius: 10%;
-		border: 1px solid var(--border);
+		border-spacing: 0;
+		border-collapse: separate;
 	}
 
-	td {
-		text-align: left;
-		padding: 8px;
+	table tr td {
 		border-top: 1px solid var(--border);
 	}
 
-	td span.tags {
+	table td {
+		text-align: left;
+		padding: 8px;
+	}
+
+	table tr:last-child td {
+		border-bottom: 1px solid var(--border);
+	}
+
+	table td:first-child {
+		border-left: 1px solid var(--border);
+	}
+
+	table td:last-child {
+		border-right: 1px solid var(--border);
+	}
+
+	table tr:first-child td:first-child {
+		border-top-left-radius: 8px;
+	}
+
+	table tr:first-child td:last-child {
+		border-top-right-radius: 8px;
+	}
+
+	table tr:last-child td:first-child {
+		border-bottom-left-radius: 8px;
+	}
+
+	table tr:last-child td:last-child {
+		border-bottom-right-radius: 8px;
+	}
+
+	span.tags {
 		margin-left: 12px;
 	}
 

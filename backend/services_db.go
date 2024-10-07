@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"os"
 )
@@ -31,7 +32,10 @@ func write_users(users map[string]*CustomUser) error {
 // Returns a map where the key is the user.login and the value is the custom user struct
 func read_users() (map[string]*CustomUser, error) {
 	file, err := os.Open("db/users.json")
-	if err != nil {
+
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, nil
+	} else if err != nil {
 		return nil, err
 	}
 
@@ -89,7 +93,10 @@ func read_teams(active_only bool) (map[string]*CustomTeam, error) {
 	} else {
 		file, err = os.Open("db/teams.json")
 	}
-	if err != nil {
+
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, nil
+	} else if err != nil {
 		return nil, err
 	}
 

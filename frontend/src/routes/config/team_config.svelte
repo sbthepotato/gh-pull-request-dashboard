@@ -1,7 +1,9 @@
 <script>
 	import { onMount } from "svelte";
+	import Button from "../../components/button.svelte";
 
 	let teams = [];
+	let result = "";
 	let err = "";
 
 	onMount(() => {
@@ -39,6 +41,9 @@
 		}));
 
 		try {
+			err = "";
+			result = "";
+
 			const response = await fetch("api/config/set_teams", {
 				method: "POST",
 				headers: {
@@ -56,8 +61,9 @@
 
 <h2>Team Configuration</h2>
 
-<button on:click={() => get_teams(true)}>Hard refresh team list</button>
-<button on:click={() => set_teams()}>Save Teams</button>
+<Button color="green" onClick={() => get_teams(true)}
+	>Hard refresh team list</Button>
+<Button color="green" onClick={() => set_teams()}>Save Teams</Button>
 
 {#if err !== ""}
 	<p>
@@ -94,6 +100,11 @@
 			{/each}
 		</tbody>
 	</table>
+	{#if result !== ""}
+		<p>
+			{result}
+		</p>
+	{/if}
 {:else}
 	<p>No teams found</p>
 {/if}

@@ -26,9 +26,13 @@ navigate to ``frontend/`` and run ``npm i``
 
 If you want to change the port the web-server runs on you can change the ``port`` values in ``vite.config.js``
 
-If you are hosting the site on something other than a root domain, say ``example.com/pr-dashboard/`` for example then you must change the ``base`` field in ``vite.config.js`` and in ``svelte.config.js`` to be the same as the base you are running it in.
-
 you can run or build the frontend from the root by running ``npm run dev`` or ``npm run build``.
+
+A ``.env`` file can be created with the following fields:
+
+| name | what it does |
+| --- | --- |
+| ``VITE_URL_PATH=`` | if you are running under a domain path (example.com/pr-dashboard) this can be filled in to the path (/pr-dashboard) |
 
 
 ## running the application

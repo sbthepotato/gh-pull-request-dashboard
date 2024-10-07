@@ -19,6 +19,7 @@ type CustomPullRequest struct {
 	CreatedBy      *CustomUser `json:"created_by,omitempty"`
 	ReviewOverview []*Review   `json:"review_overview,omitempty"`
 	Awaiting       *string     `json:"awaiting,omitempty"`
+	Index          *int        `json:"index,omitempty"`
 }
 
 type CustomUser struct {

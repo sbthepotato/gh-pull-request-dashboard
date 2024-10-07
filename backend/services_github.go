@@ -120,8 +120,6 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 		return nil, err
 	}
 
-	pr_channel := make(chan *CustomPullRequest)
-
 	users, err := read_users()
 	if err != nil {
 		return nil, err
@@ -133,6 +131,8 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 	}
 
 	var wg sync.WaitGroup
+	idx := 0
+	pr_channel := make(chan *CustomPullRequest)
 
 	for _, pr := range gh_prs {
 		if *pr.Draft {
@@ -140,7 +140,8 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 		}
 
 		wg.Add(1)
-		go process_pr(pr_channel, &wg, ctx, c, owner, repo, *pr.Number, users, teams)
+		go process_pr(pr_channel, &wg, ctx, c, owner, repo, *pr.Number, users, teams, idx)
+		idx++ // manual index as we are skipping draft
 	}
 
 	go func() {
@@ -148,10 +149,10 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 		close(pr_channel)
 	}()
 
-	prs := make([]*CustomPullRequest, 0)
+	prs := make([]*CustomPullRequest, idx)
 
 	for processed_pr := range pr_channel {
-		prs = append(prs, processed_pr)
+		prs[*processed_pr.Index] = processed_pr
 	}
 
 	return prs, nil
@@ -161,7 +162,7 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 /*
 Process a pull request into the pull request channel
 */
-func process_pr(pr_channel chan<- *CustomPullRequest, wg *sync.WaitGroup, ctx context.Context, c *github.Client, owner string, repo string, pr_num int, users map[string]*CustomUser, teams map[string]*CustomTeam) {
+func process_pr(pr_channel chan<- *CustomPullRequest, wg *sync.WaitGroup, ctx context.Context, c *github.Client, owner string, repo string, pr_num int, users map[string]*CustomUser, teams map[string]*CustomTeam, idx int) {
 
 	defer wg.Done()
 
@@ -182,11 +183,24 @@ func process_pr(pr_channel chan<- *CustomPullRequest, wg *sync.WaitGroup, ctx co
 	status_approved := "APPROVED"
 	team_other := "OTHER"
 
+	if teams == nil {
+		team_other = "Review"
+	}
+
 	// first populate requested teams and users. any previous state doesn't matter if you're requested
 	if detailed_pr.RequestedTeams != nil {
 		for _, req_team := range detailed_pr.RequestedTeams {
 			review.State = &status_requested
-			review.Team = teams[*req_team.Slug]
+
+			// if the team map isnt available, just use what we have
+			if val, ok := teams[*req_team.Slug]; ok {
+				review.Team = val
+			} else {
+				custom_team := new(CustomTeam)
+				custom_team.Team = req_team
+				review.Team = custom_team
+			}
+
 			review.State = &status_requested
 
 			review_overview = append(review_overview, *review)
@@ -195,7 +209,16 @@ func process_pr(pr_channel chan<- *CustomPullRequest, wg *sync.WaitGroup, ctx co
 
 	if detailed_pr.RequestedReviewers != nil {
 		for _, req_review := range detailed_pr.RequestedReviewers {
-			review.User = users[*req_review.Login]
+
+			// if the user map isnt available, just use what we have
+			if val, ok := users[*req_review.Login]; ok {
+				review.User = val
+			} else {
+				custom_user := new(CustomUser)
+				custom_user.User = req_review
+				review.User = custom_user
+			}
+
 			if review.User.Team != nil {
 				review.Team = teams[*review.User.Team.Slug]
 			}
@@ -218,8 +241,15 @@ func process_pr(pr_channel chan<- *CustomPullRequest, wg *sync.WaitGroup, ctx co
 		if (!slices.Contains(user_review_list, *gh_review.User.Login)) && (*detailed_pr.User.Login != *gh_review.User.Login) {
 			review := new(Review)
 			user_review_list = append(user_review_list, *gh_review.User.Login)
-			review.User = users[*gh_review.User.Login]
-			if review.User.Team != nil {
+			if val, ok := users[*gh_review.User.Login]; ok {
+				review.User = val
+			} else {
+				custom_user := new(CustomUser)
+				custom_user.User = gh_review.User
+				review.User = custom_user
+			}
+
+			if review.User != nil && review.User.Team != nil {
 				review.Team = teams[*review.User.Team.Slug]
 			}
 			review.State = gh_review.State
@@ -231,23 +261,30 @@ func process_pr(pr_channel chan<- *CustomPullRequest, wg *sync.WaitGroup, ctx co
 	custom_pr.CreatedBy = users[*detailed_pr.User.Login]
 	custom_pr.PullRequest = detailed_pr
 	custom_pr.ReviewOverview = make([]*Review, 0)
+	custom_pr.Index = &idx
 	current_priority := 100
 	approved_count := 0
 
 	for _, custom_review := range review_overview {
 		if (*custom_review.State != "DISMISSED") && (*custom_review.State != "COMMENTED") {
+
 			review := new(Review)
 			review.User = custom_review.User
 			review.Team = custom_review.Team
 			review.State = custom_review.State
 
 			if *review.State == status_requested {
-				if review.Team != nil && *review.Team.ReviewOrder < current_priority {
-					current_priority = *review.Team.ReviewOrder
-					custom_pr.Awaiting = review.Team.Name
+				if review.Team != nil {
+					if review.Team.ReviewOrder != nil && *review.Team.ReviewOrder < current_priority {
+						current_priority = *review.Team.ReviewOrder
+						custom_pr.Awaiting = review.Team.Name
+					} else if custom_pr.Awaiting == nil {
+						custom_pr.Awaiting = &team_other
+					}
 				} else if review.Team == nil {
 					custom_pr.Awaiting = &team_other
 				}
+
 			} else if *review.State == "CHANGES_REQUESTED" {
 				custom_pr.Awaiting = &changes_requested
 				current_priority = -1
