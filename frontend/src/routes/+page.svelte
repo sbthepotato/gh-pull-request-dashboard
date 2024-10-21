@@ -1,5 +1,6 @@
 <script>
 	import { onDestroy, onMount } from "svelte";
+	import { page } from "$app/stores";
 
 	import Button from "../components/button.svelte";
 	import Icon from "../components/icon.svelte";
@@ -13,7 +14,8 @@
 	let url = "api/dashboard/get_pr_list";
 	let err = "";
 	let pr_list = {};
-	let pr_stats = {};
+	let created_by = "";
+	let filtered_pr_list = {};
 
 	onMount(() => {
 		get_pr_list();
@@ -24,7 +26,6 @@
 			loading = true;
 			err = "";
 			pr_list = {};
-			pr_stats = { total: 0, "ready to merge": 0, "Changes Requested": 0 };
 
 			if (refresh) {
 				url = url + "?refresh=y";
@@ -34,26 +35,8 @@
 
 			if (response.ok) {
 				pr_list = await response.json();
-				pr_stats["total"] = pr_list.pull_requests.length;
 
-				// make sure the review teams are in the correct order always
-				if (pr_list.review_teams !== undefined) {
-					pr_list.review_teams.forEach((team) => {
-						pr_stats[team.name] = 0;
-					});
-				} else {
-					pr_stats[review] = 0;
-				}
-
-				pr_list.pull_requests.forEach((pull) => {
-					if (pull.awaiting === "APPROVED") {
-						pr_stats["ready to merge"] = pr_stats["ready to merge"] + 1 || 1;
-					} else if (pull.awaiting === undefined) {
-						pr_stats["missing status"] = pr_stats["missing status"] + 1 || 1;
-					} else {
-						pr_stats[pull.awaiting] = pr_stats[pull.awaiting] + 1 || 1;
-					}
-				});
+				filtered_pr_list = pr_list.pull_requests;
 			} else {
 				throw new Error(await response.text());
 			}
@@ -70,9 +53,24 @@
 		clearInterval(reload_interval);
 	}
 
+	$: (created_by = $page.url.searchParams.get("created_by")),
+		get_filter(created_by);
+
+	$: pr_list, get_filter($page.url.searchParams.get("created_by"));
+
 	onDestroy(() => {
 		clearInterval(reload_interval);
 	});
+
+	function get_filter(name) {
+		if (name !== null && pr_list.pull_requests !== undefined) {
+			filtered_pr_list = pr_list.pull_requests.filter(
+				(pr) => pr.created_by.login == name,
+			);
+		} else {
+			filtered_pr_list = pr_list.pull_requests;
+		}
+	}
 </script>
 
 <section class="pr-table">
@@ -88,8 +86,8 @@
 				width="128px" />
 		</div>
 	{:else}
-		<PRAgg {pr_stats} />
-		<PRTable pr_list={pr_list.pull_requests} />
+		<PRAgg {pr_list} />
+		<PRTable pr_list={filtered_pr_list} />
 	{/if}
 </section>
 

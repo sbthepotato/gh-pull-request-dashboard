@@ -1,9 +1,42 @@
 <script>
+	import { onMount } from "svelte";
+
 	export let user;
 	export let size = "l";
+	export let action = "link";
+
+	let element = HTMLElement;
+
+	onMount(() => {
+		if (action !== "link") {
+			element.href = "";
+			element.target = "";
+		}
+	});
+
+	function filter_url(name) {
+		const url = new URL(window.location);
+		url.searchParams.set("created_by", name);
+		history.pushState(null, "", url);
+	}
+
+	function click_handler() {
+		if (action === "link") {
+			return;
+		} else if (action === "filter") {
+			filter_url(user.login);
+		}
+	}
 </script>
 
-<a href={user.html_url} target="_blank" class="container">
+<a
+	href={user.html_url}
+	target="_blank"
+	on:click={() => {
+		click_handler();
+	}}
+	bind:this={element}
+	class="container">
 	{#if size !== "xs"}
 		<img src={user.avatar_url} alt="{user.login} avatar" class={size} />
 	{/if}

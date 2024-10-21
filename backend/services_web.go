@@ -181,7 +181,7 @@ func get_pr_list(ctx context.Context, c *github.Client, owner string, repo strin
 		refresh := r.URL.Query().Get("refresh")
 		currentTime := time.Now()
 
-		if (currentTime.Sub(last_fetched_prs).Minutes() > 10) || (refresh == "y") && (currentTime.Sub(last_fetched_prs).Minutes() > 2) {
+		if (currentTime.Sub(last_fetched_prs).Minutes() > 5) || (refresh == "y") && (currentTime.Sub(last_fetched_prs).Minutes() > 2) {
 			cached_prs = new(PullRequestInfo)
 
 			prs, err := gh_get_pr_list(ctx, c, owner, repo)
