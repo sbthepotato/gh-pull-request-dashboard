@@ -1,15 +1,14 @@
 <script>
 	export let name;
 	export let color;
-	export let width = "16px";
-	export let height = "16px";
+	export let size = "16px";
 
 	const url_prefix = import.meta.env.VITE_URL_PATH;
 </script>
 
 <img
-	{height}
-	{width}
+	height={size}
+	width={size}
 	src="{url_prefix}/icons/{name}.svg"
 	alt={name}
 	class={color} />

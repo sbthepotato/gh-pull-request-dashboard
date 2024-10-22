@@ -3,7 +3,7 @@
 	import { page } from "$app/stores";
 
 	import Button from "../components/button.svelte";
-	import Icon from "../components/icon.svelte";
+	import Loading from "../components/loading.svelte";
 	import PRTable from "./pr_table.svelte";
 	import PRAgg from "./pr_aggregation.svelte";
 
@@ -13,9 +13,9 @@
 
 	let url = "api/dashboard/get_pr_list";
 	let err = "";
-	let pr_list = {};
+	let result = {};
 	let created_by = "";
-	let filtered_pr_list = {};
+	let pr_list = {};
 
 	onMount(() => {
 		get_pr_list();
@@ -34,9 +34,9 @@
 			const response = await fetch(url);
 
 			if (response.ok) {
-				pr_list = await response.json();
+				result = await response.json();
 
-				filtered_pr_list = pr_list.pull_requests;
+				pr_list = result.pull_requests;
 			} else {
 				throw new Error(await response.text());
 			}
@@ -56,19 +56,19 @@
 	$: (created_by = $page.url.searchParams.get("created_by")),
 		get_filter(created_by);
 
-	$: pr_list, get_filter($page.url.searchParams.get("created_by"));
+	$: result, get_filter($page.url.searchParams.get("created_by"));
 
 	onDestroy(() => {
 		clearInterval(reload_interval);
 	});
 
 	function get_filter(name) {
-		if (name !== null && pr_list.pull_requests !== undefined) {
-			filtered_pr_list = pr_list.pull_requests.filter(
+		if (name !== null && result.pull_requests !== undefined) {
+			pr_list = result.pull_requests.filter(
 				(pr) => pr.created_by.login == name,
 			);
 		} else {
-			filtered_pr_list = pr_list.pull_requests;
+			pr_list = result.pull_requests;
 		}
 	}
 </script>
@@ -77,17 +77,10 @@
 	{#if err !== ""}
 		{err}
 	{:else if loading}
-		<div>
-			<p>Loading PR list...</p>
-			<Icon
-				name="mark-github-24"
-				color="rainbow"
-				height="128px"
-				width="128px" />
-		</div>
+		<Loading text="Loading PR list..." />
 	{:else}
-		<PRAgg {pr_list} />
-		<PRTable pr_list={filtered_pr_list} />
+		<PRAgg {pr_list} review_teams={result.review_teams} />
+		<PRTable {pr_list} />
 	{/if}
 </section>
 

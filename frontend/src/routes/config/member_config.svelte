@@ -2,9 +2,11 @@
 	import { onMount } from "svelte";
 	import User from "../../components/user.svelte";
 	import Button from "../../components/button.svelte";
+	import Loading from "../../components/loading.svelte";
 
-	let members = [];
 	let err = "";
+	let result = [];
+	let loading = false;
 
 	let team_members = {};
 	let teams = [];
@@ -15,8 +17,9 @@
 
 	async function get_members(refresh) {
 		try {
+			loading = true;
 			err = "";
-			members = [];
+			result = [];
 			team_members = { none: [] };
 			teams = [{ name: "none" }];
 
@@ -29,8 +32,9 @@
 			const response = await fetch(url);
 
 			if (response.ok) {
-				members = await response.json();
-				members.forEach((user) => {
+				result = await response.json();
+
+				result.forEach((user) => {
 					if (user.team === undefined) {
 						team_members["none"].push(user);
 					} else if (user.team.name in team_members) {
@@ -45,6 +49,8 @@
 			}
 		} catch (error) {
 			err = error.message;
+		} finally {
+			loading = false;
 		}
 	}
 </script>
@@ -57,8 +63,10 @@
 	<p>
 		{err}
 	</p>
-{:else if members.length > 0}
-	<p>{members.length} members found</p>
+{:else if loading}
+	<Loading text="Loading Members..." size="64px" />
+{:else if result.length > 0}
+	<p>{result.length} members found</p>
 	{#each teams as team}
 		<div class="team-container">
 			<h2>{team.name}</h2>

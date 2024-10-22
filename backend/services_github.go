@@ -50,26 +50,47 @@ func gh_get_members(ctx context.Context, c *github.Client, owner string) ([]*Cus
 		}
 	}
 
-	userMap := make(map[string]*CustomUser)
+	var wg sync.WaitGroup
+	user_channel := make(chan *CustomUser)
 
 	// go through all org members to get extended user info, also add team info
 	for _, member := range members {
-		user, _, err := c.Users.Get(ctx, *member.Login)
-		if err != nil {
-			return nil, err
-		}
+		wg.Add(1)
+		go process_member(user_channel, &wg, ctx, c, *member.Login, userTeams)
+	}
 
-		custom_user := new(CustomUser)
-		custom_user.User = user
-		custom_user.Team = userTeams[*user.Login]
+	go func() {
+		wg.Wait()
+		close(user_channel)
+	}()
 
-		users = append(users, custom_user)
-		userMap[*user.Login] = custom_user
+	userMap := make(map[string]*CustomUser)
+	for processed_user := range user_channel {
+		userMap[*processed_user.Login] = processed_user
+		users = append(users, processed_user)
 	}
 
 	write_users(userMap)
 
 	return users, nil
+}
+
+/*
+process a member into the member channel
+*/
+func process_member(user_channel chan<- *CustomUser, wg *sync.WaitGroup, ctx context.Context, c *github.Client, login string, teams map[string]*CustomTeam) {
+	defer wg.Done()
+
+	user, _, err := c.Users.Get(ctx, login)
+	if err != nil {
+		log.Println("error fetching user", login, err)
+	}
+
+	custom_user := new(CustomUser)
+	custom_user.User = user
+	custom_user.Team = teams[*user.Login]
+
+	user_channel <- custom_user
 }
 
 /*

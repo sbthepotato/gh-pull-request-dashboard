@@ -6,6 +6,8 @@
 
 	export let pr_list = [];
 
+	let size = "12px";
+
 	let date_options = {
 		month: "short",
 		day: "numeric",
@@ -79,11 +81,7 @@
 								Modified {convert_date(pr.updated_at)}
 							</span>
 							<span>
-								<Icon
-									name="file-code-16"
-									height="12px"
-									width="12px"
-									color="grey" />
+								<Icon name="file-code-16" {size} color="grey" />
 								{pr.changed_files}
 							</span>
 							<span>
@@ -93,8 +91,7 @@
 							<span
 								><Icon
 									name="comment-discussion-16"
-									height="12px"
-									width="12px"
+									{size}
 									&nbsp;
 									color="grey" />
 								{pr.comments}

@@ -2,22 +2,24 @@
 	import PRStats from "../components/pr_stats.svelte";
 
 	export let pr_list;
+	export let review_teams;
+
 	let pr_stats = {};
 
 	function aggregate_prs(pr_list) {
-		if (pr_list.pull_requests !== undefined) {
+		if (pr_list !== undefined) {
 			pr_stats = { total: 0, "ready to merge": 0, "Changes Requested": 0 };
-			pr_stats["total"] = pr_list.pull_requests.length;
+			pr_stats["total"] = pr_list.length;
 
-			if (pr_list.review_teams !== undefined) {
-				pr_list.review_teams.forEach((team) => {
+			if (review_teams !== undefined) {
+				review_teams.forEach((team) => {
 					pr_stats[team.name] = 0;
 				});
 			} else {
 				pr_stats[review] = 0;
 			}
 
-			pr_list.pull_requests.forEach((pull) => {
+			pr_list.forEach((pull) => {
 				if (pull.awaiting === "APPROVED") {
 					pr_stats["ready to merge"] = pr_stats["ready to merge"] + 1 || 1;
 				} else if (pull.awaiting === undefined) {
