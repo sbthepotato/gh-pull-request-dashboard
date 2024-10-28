@@ -73,9 +73,10 @@
 	<p>{teams.length} teams found</p>
 	<table>
 		<thead>
-			<th>Enable Team</th>
-
-			<th>Review Order</th>
+			<tr>
+				<th>Enable Team</th>
+				<th>Review Order</th>
+			</tr>
 		</thead>
 		<tbody>
 			{#each teams as team}

@@ -1,6 +1,6 @@
 package main
 
-import "github.com/google/go-github/v64/github"
+import "github.com/google/go-github/v66/github"
 
 /*
 core application settings
