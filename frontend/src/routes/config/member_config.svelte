@@ -56,7 +56,7 @@
 </script>
 
 <h2>Member Configuration</h2>
-<Button color="green" onClick={() => get_members(true)}
+<Button color="green" on_click={() => get_members(true)}
 	>Hard refresh member list</Button>
 
 {#if err !== ""}

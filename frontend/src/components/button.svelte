@@ -2,22 +2,22 @@
 	import { goto } from "$app/navigation";
 
 	export let type = "button";
-	export let onClick = () => {};
+	export let on_click = () => {};
 	export let to = null;
 	export let color = "grey";
 
 	const url_prefix = import.meta.env.VITE_URL_PATH;
 
-	function handleClick(event) {
+	function click_handler(event) {
 		if (to) {
 			goto(url_prefix + to);
 		} else {
-			onClick(event);
+			on_click(event);
 		}
 	}
 </script>
 
-<button class={color} {type} on:click={handleClick}>
+<button class={color} {type} on:click={click_handler}>
 	<slot></slot>
 </button>
 
@@ -38,6 +38,10 @@
 
 	button.green {
 		background-color: var(--button-green);
+	}
+
+	button.blue {
+		background-color: var(--border-blue);
 	}
 
 	button:hover {

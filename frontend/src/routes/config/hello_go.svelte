@@ -23,7 +23,7 @@
 </script>
 
 <h2>Connection test</h2>
-<Button color="green" onClick={hello_go}>Say hello to the backend</Button>
+<Button color="green" on_click={hello_go}>Say hello to the backend</Button>
 
 <p>
 	{#if err}

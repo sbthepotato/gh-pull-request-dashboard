@@ -1,5 +1,6 @@
 <script>
 	import { onMount } from "svelte";
+	import { set_url_param } from "$lib/index.js";
 
 	export let user;
 	export let size = "l";
@@ -14,17 +15,11 @@
 		}
 	});
 
-	function filter_url(name) {
-		const url = new URL(window.location);
-		url.searchParams.set("created_by", name);
-		history.pushState(null, "", url);
-	}
-
 	function click_handler() {
 		if (action === "link") {
 			return;
 		} else if (action === "filter") {
-			filter_url(user.login);
+			set_url_param("created_by", user.login);
 		}
 	}
 </script>

@@ -1,4 +1,6 @@
 <script>
+	import { get_text_luminance, get_pretty_date } from "$lib/index.js";
+
 	import Review from "../components/review.svelte";
 	import PrAwaiting from "../components/pr_awaiting.svelte";
 	import User from "../components/user.svelte";
@@ -7,35 +9,6 @@
 	export let pr_list = [];
 
 	let size = "12px";
-
-	let date_options = {
-		month: "short",
-		day: "numeric",
-		hour: "numeric",
-		minute: "numeric",
-		hour12: false,
-	};
-
-	function convert_date(date_str) {
-		let date = new Date(date_str);
-		return date.toLocaleString("en-us", date_options);
-	}
-
-	function getTextLuminance(hexColor) {
-		// Remove the "#" if it exists
-		const color = hexColor.replace("#", "");
-
-		// Convert hex to RGB
-		const r = parseInt(color.substring(0, 2), 16);
-		const g = parseInt(color.substring(2, 4), 16);
-		const b = parseInt(color.substring(4, 6), 16);
-
-		// Calculate the luminance of the color
-		const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-
-		// Return white for dark colors and black for light colors
-		return luminance > 0.5 ? "#0d1117" : "#f0f6fc";
-	}
 </script>
 
 {#if pr_list != undefined && pr_list.length > 0}
@@ -59,7 +32,7 @@
 									&nbsp;
 									<span
 										class="tag"
-										style="background-color:#{label.color}; color: {getTextLuminance(
+										style="background-color:#{label.color}; color: {get_text_luminance(
 											label.color,
 										)}">
 										{label.name}
@@ -75,10 +48,10 @@
 								</a>
 							</span>
 							<span>
-								Created {convert_date(pr.created_at)}
+								Created {get_pretty_date(pr.created_at)}
 							</span>
 							<span>
-								Modified {convert_date(pr.updated_at)}
+								Modified {get_pretty_date(pr.updated_at)}
 							</span>
 							<span>
 								<Icon name="file-code-16" {size} color="grey" />
@@ -88,12 +61,8 @@
 								<span class="additions"> ++{pr.additions}</span>
 								<span class="deletions">--{pr.deletions}</span>
 							</span>
-							<span
-								><Icon
-									name="comment-discussion-16"
-									{size}
-									&nbsp;
-									color="grey" />
+							<span>
+								<Icon name="comment-discussion-16" {size} color="grey" />
 								{pr.comments}
 							</span>
 							{#if pr.base.ref != "main"}
