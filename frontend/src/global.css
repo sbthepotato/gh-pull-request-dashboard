@@ -37,3 +37,19 @@ a:visited {
 	color: var(--text-links);
 	text-decoration: none;
 }
+
+::-webkit-scrollbar {
+	scrollbar-width: thin;
+}
+
+::-webkit-scrollbar-track {
+	background: var(--page-bg);
+}
+
+::-webkit-scrollbar-thumb {
+	background: var(--border);
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: var(--text-alt);
+}

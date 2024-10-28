@@ -152,14 +152,24 @@
 							))) &&
 					(pr.title.toLowerCase().includes(search_query) ||
 						pr.awaiting.toLowerCase().includes(search_query) ||
-						pr.created_by.login.includes(search_query) ||
-						pr.created_by.name.includes(search_query) ||
+						pr.created_by.login.toLowerCase().includes(search_query) ||
+						pr.created_by.name.toLowerCase().includes(search_query) ||
+						pr.base.label.toLowerCase().includes(search_query) ||
+						pr.number.toString().includes(search_query) ||
 						pr.review_overview.some(
 							(review) =>
-								review.user &&
-								(review.user.login.includes(search_query) ||
-									review.user.name.includes(search_query)),
-						)),
+								(review.user &&
+									review.state === "REVIEW_REQUESTED" &&
+									(review.user.login.toLowerCase().includes(search_query) ||
+										review.user.name.toLowerCase().includes(search_query))) ||
+								(review.team &&
+									review.state === "REVIEW_REQUESTED" &&
+									review.team.name.toLowerCase().includes(search_query)),
+						) ||
+						(pr.labels &&
+							pr.labels.some((label) =>
+								label.name.toLowerCase().includes(search_query),
+							))),
 			);
 		} else {
 			pr_list = result.pull_requests;
@@ -171,6 +181,7 @@
 		created_by_filter = null;
 		checkboxes.include_requested = true;
 		search_query = "";
+		get_filter();
 	}
 
 	$: $page.url.search, handle_params();
@@ -189,7 +200,8 @@
 			<Searchbar
 				value={search_query}
 				placeholder="Search Pull Requests..."
-				on:change={handle_searchbar_change} />
+				on:change={handle_searchbar_change}
+				on:input={handle_searchbar_change} />
 		{/if}
 		<PRTable {pr_list} />
 	{/if}
