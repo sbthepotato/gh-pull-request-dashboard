@@ -151,20 +151,16 @@
 									checkboxes.include_requested,
 							))) &&
 					(pr.title.toLowerCase().includes(search_query) ||
-						pr.awaiting.toLowerCase().includes(search_query) ||
+						pr.awaiting?.toLowerCase().includes(search_query) ||
 						pr.created_by.login.toLowerCase().includes(search_query) ||
 						pr.created_by.name.toLowerCase().includes(search_query) ||
 						pr.base.label.toLowerCase().includes(search_query) ||
 						pr.number.toString().includes(search_query) ||
 						pr.review_overview.some(
 							(review) =>
-								(review.user &&
-									review.state === "REVIEW_REQUESTED" &&
-									(review.user.login.toLowerCase().includes(search_query) ||
-										review.user.name.toLowerCase().includes(search_query))) ||
-								(review.team &&
-									review.state === "REVIEW_REQUESTED" &&
-									review.team.name.toLowerCase().includes(search_query)),
+								review.state === "REVIEW_REQUESTED" &&
+								(review.user?.login.toLowerCase().includes(search_query) ||
+									review.user?.name.toLowerCase().includes(search_query)),
 						) ||
 						(pr.labels &&
 							pr.labels.some((label) =>

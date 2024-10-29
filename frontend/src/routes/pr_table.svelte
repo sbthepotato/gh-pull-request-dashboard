@@ -18,7 +18,7 @@
 				<tr>
 					<td class="created_by">
 						{#if pr.created_by !== undefined}
-							<User user={pr.created_by} action="filter" />
+							<User user={pr.created_by} type="div" />
 						{:else}
 							<User user={pr.user} />
 						{/if}

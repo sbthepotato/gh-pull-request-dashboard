@@ -4,29 +4,33 @@
 
 	export let user;
 	export let size = "l";
-	export let action = "link";
+	export let type = "a";
 
 	let element = HTMLElement;
 
 	onMount(() => {
-		if (action !== "link") {
+		if (type === "a") {
+			element.href = user.html_url;
+			element.target = "_blank";
+		} else {
 			element.href = "";
 			element.target = "";
 		}
 	});
 
 	function click_handler() {
-		if (action === "link") {
+		if (type === "a") {
 			return;
-		} else if (action === "filter") {
+		} else {
 			set_url_param("created_by", user.login);
 		}
 	}
 </script>
 
-<a
-	href={user.html_url}
-	target="_blank"
+<svelte:element
+	this={type}
+	role="button"
+	tabindex="0"
 	on:click={() => {
 		click_handler();
 	}}
@@ -45,22 +49,23 @@
 			<span class="big-login">@{user.login}</span>
 		{/if}
 	</div>
-</a>
+</svelte:element>
 
 <style>
-	a.container {
+	.container {
 		display: inline-flex;
 		align-items: center;
 		color: var(--text);
 		font-size: medium;
 	}
 
-	a.container:hover {
+	.container:hover {
 		color: var(--text-links);
+		cursor: pointer;
 	}
 
-	a.container:hover span.name,
-	a.container:hover span.big-login {
+	.container:hover span.name,
+	.container:hover span.big-login {
 		text-decoration: underline;
 	}
 
