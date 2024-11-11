@@ -100,45 +100,6 @@
 <style>
 	table {
 		width: 100%;
-		border-spacing: 0;
-		border-collapse: separate;
-	}
-
-	table tr td {
-		border-top: 1px solid var(--border);
-	}
-
-	table td {
-		text-align: left;
-		padding: 8px;
-	}
-
-	table tr:last-child td {
-		border-bottom: 1px solid var(--border);
-	}
-
-	table td:first-child {
-		border-left: 1px solid var(--border);
-	}
-
-	table td:last-child {
-		border-right: 1px solid var(--border);
-	}
-
-	table tr:first-child td:first-child {
-		border-top-left-radius: 8px;
-	}
-
-	table tr:first-child td:last-child {
-		border-top-right-radius: 8px;
-	}
-
-	table tr:last-child td:first-child {
-		border-bottom-left-radius: 8px;
-	}
-
-	table tr:last-child td:last-child {
-		border-bottom-right-radius: 8px;
 	}
 
 	span.tags {

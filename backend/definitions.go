@@ -49,7 +49,7 @@ type CustomTeam struct {
 }
 
 /*
-the POST from frontend to set team info
+POST to set team state
 */
 type SetTeam struct {
 	Slug          string `json:"slug,omitempty"`
@@ -63,4 +63,20 @@ pull request list with accompanying information for list
 type PullRequestInfo struct {
 	PullRequests []*CustomPullRequest `json:"pull_requests,omitempty"`
 	ReviewTeams  []*CustomTeam        `json:"review_teams,omitempty"`
+}
+
+/*
+repository with enabled field
+*/
+type CustomRepo struct {
+	*github.Repository
+	Enabled *bool `json:"enabled,omitempty"`
+}
+
+/*
+POST to set repo state
+*/
+type setRepo struct {
+	Name    string `json:"name,omitempty"`
+	Enabled bool   `json:"enabled,omitempty"`
 }

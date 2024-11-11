@@ -61,8 +61,9 @@
 
 <h2>Team Configuration</h2>
 
-<Button color="green" on_click={() => get_teams(true)}
-	>Hard refresh team list</Button>
+<Button color="green" on_click={() => get_teams(true)}>
+	hard refresh team list
+</Button>
 <Button color="green" on_click={() => set_teams()}>Save Teams</Button>
 
 {#if err !== ""}
@@ -74,6 +75,7 @@
 	<table>
 		<thead>
 			<tr>
+				<th></th>
 				<th>Enable Team</th>
 				<th>Review Order</th>
 			</tr>
@@ -82,14 +84,14 @@
 			{#each teams as team}
 				<tr>
 					<td>
-						<label>
-							{team.name}
-							<input
-								type="checkbox"
-								id={team.slug}
-								name={team.slug}
-								bind:checked={team.review_enabled} />
-						</label>
+						{team.name}
+					</td>
+					<td>
+						<input
+							type="checkbox"
+							id={team.slug}
+							name={team.slug}
+							bind:checked={team.review_enabled} />
 					</td>
 					<td>
 						<input

@@ -115,3 +115,68 @@ func read_teams(active_only bool) (map[string]*CustomTeam, error) {
 	return teamMap, nil
 
 }
+
+/*
+write repo list to db/repos.json
+*/
+func write_repos(repos []*CustomRepo) error {
+	jsonData, err := json.Marshal(repos)
+	if err != nil {
+		return err
+	}
+
+	file, err := os.Create("db/repos.json")
+
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	_, err = file.Write(jsonData)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+/*
+read repo list from db/repos.json
+parameter decides if list should only return active repos
+*/
+func read_repos(active_only bool) ([]*CustomRepo, error) {
+
+	file, err := os.Open("db/repos.json")
+
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
+
+	jsonData, err := io.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+
+	repos := make([]*CustomRepo, 0)
+
+	err = json.Unmarshal(jsonData, &repos)
+	if err != nil {
+		return nil, err
+	}
+
+	if active_only {
+		active_repos := make([]*CustomRepo, 0)
+
+		for _, repo := range repos {
+			if *repo.Enabled {
+				active_repos = append(active_repos, repo)
+			}
+		}
+
+		return active_repos, nil
+	} else {
+		return repos, nil
+	}
+
+}

@@ -11,6 +11,45 @@ import (
 )
 
 /*
+get all repositories for the currently set org
+*/
+func gh_get_repos(ctx context.Context, c *github.Client, owner string) ([]*CustomRepo, error) {
+
+	opt := &github.RepositoryListByOrgOptions{
+		Sort:        "full_name",
+		ListOptions: github.ListOptions{PerPage: 100},
+	}
+
+	var all_repos []*github.Repository
+
+	for {
+		repos, resp, err := c.Repositories.ListByOrg(ctx, owner, opt)
+		if err != nil {
+			return nil, err
+		}
+
+		all_repos = append(all_repos, repos...)
+		if resp.NextPage == 0 {
+			break
+		}
+		opt.Page = resp.NextPage
+
+	}
+
+	var custom_repos []*CustomRepo
+
+	for _, repo := range all_repos {
+		custom_repo := new(CustomRepo)
+
+		custom_repo.Repository = repo
+		custom_repos = append(custom_repos, custom_repo)
+
+	}
+
+	return custom_repos, nil
+}
+
+/*
 get members and link them up to one of the active teams
 */
 func gh_get_members(ctx context.Context, c *github.Client, owner string) ([]*CustomUser, error) {
@@ -19,19 +58,28 @@ func gh_get_members(ctx context.Context, c *github.Client, owner string) ([]*Cus
 		ListOptions: github.ListOptions{PerPage: 100},
 	}
 
-	// get members of org
-	members, _, err := c.Organizations.ListMembers(ctx, owner, opt)
-	if err != nil {
-		return nil, err
-	}
+	var all_users []*github.User
 
-	users := make([]*CustomUser, 0)
-	userTeams := make(map[string]*CustomTeam)
+	for {
+		users, resp, err := c.Organizations.ListMembers(ctx, owner, opt)
+		if err != nil {
+			return nil, err
+		}
+
+		all_users = append(all_users, users...)
+
+		if resp.NextPage == 0 {
+			break
+		}
+		opt.Page = resp.NextPage
+	}
 
 	teams, err := read_teams(true)
 	if err != nil {
 		return nil, err
 	}
+
+	user_teams := make(map[string]*CustomTeam)
 
 	// find team members of each team in org and add it to a map
 	for _, team := range teams {
@@ -46,7 +94,7 @@ func gh_get_members(ctx context.Context, c *github.Client, owner string) ([]*Cus
 		}
 
 		for _, team_member := range team_members {
-			userTeams[*team_member.Login] = team
+			user_teams[*team_member.Login] = team
 		}
 	}
 
@@ -54,9 +102,9 @@ func gh_get_members(ctx context.Context, c *github.Client, owner string) ([]*Cus
 	user_channel := make(chan *CustomUser)
 
 	// go through all org members to get extended user info, also add team info
-	for _, member := range members {
+	for _, member := range all_users {
 		wg.Add(1)
-		go process_member(user_channel, &wg, ctx, c, *member.Login, userTeams)
+		go process_user(user_channel, &wg, ctx, c, *member.Login, user_teams)
 	}
 
 	go func() {
@@ -64,21 +112,23 @@ func gh_get_members(ctx context.Context, c *github.Client, owner string) ([]*Cus
 		close(user_channel)
 	}()
 
-	userMap := make(map[string]*CustomUser)
+	user_map := make(map[string]*CustomUser)
+	custom_users := make([]*CustomUser, 0)
+
 	for processed_user := range user_channel {
-		userMap[*processed_user.Login] = processed_user
-		users = append(users, processed_user)
+		user_map[*processed_user.Login] = processed_user
+		custom_users = append(custom_users, processed_user)
 	}
 
-	write_users(userMap)
+	write_users(user_map)
 
-	return users, nil
+	return custom_users, nil
 }
 
 /*
 process a member into the member channel
 */
-func process_member(user_channel chan<- *CustomUser, wg *sync.WaitGroup, ctx context.Context, c *github.Client, login string, teams map[string]*CustomTeam) {
+func process_user(user_channel chan<- *CustomUser, wg *sync.WaitGroup, ctx context.Context, c *github.Client, login string, teams map[string]*CustomTeam) {
 	defer wg.Done()
 
 	user, _, err := c.Users.Get(ctx, login)
