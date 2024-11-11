@@ -284,7 +284,10 @@ func process_pr(pr_channel chan<- *CustomPullRequest, wg *sync.WaitGroup, ctx co
 	for i := len(reviews) - 1; i >= 0; i-- {
 		//for _, review := range reviews {
 		gh_review := reviews[i]
-		if (!slices.Contains(user_review_list, *gh_review.User.Login)) && (*detailed_pr.User.Login != *gh_review.User.Login) {
+		if (!slices.Contains(user_review_list, *gh_review.User.Login)) &&
+			(*detailed_pr.User.Login != *gh_review.User.Login) &&
+			(*gh_review.State != "COMMENTED") {
+
 			review := new(Review)
 			user_review_list = append(user_review_list, *gh_review.User.Login)
 			if val, ok := users[*gh_review.User.Login]; ok {
@@ -300,6 +303,7 @@ func process_pr(pr_channel chan<- *CustomPullRequest, wg *sync.WaitGroup, ctx co
 			}
 			review.State = gh_review.State
 			review_overview = append(review_overview, *review)
+
 		}
 	}
 
@@ -312,7 +316,7 @@ func process_pr(pr_channel chan<- *CustomPullRequest, wg *sync.WaitGroup, ctx co
 	approved_count := 0
 
 	for _, custom_review := range review_overview {
-		if (*custom_review.State != "DISMISSED") && (*custom_review.State != "COMMENTED") {
+		if *custom_review.State != "DISMISSED" {
 
 			review := new(Review)
 			review.User = custom_review.User
