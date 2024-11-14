@@ -19,6 +19,9 @@
 		<Icon name="git-pull-request-16" color="green" {size} />
 	{:else if who === "missing status"}
 		<p>Missing Status</p>
+		<Icon name="alert-16" color="yellow" {size} />
+	{:else if who === "error"}
+		<p>Error</p>
 		<Icon name="alert-16" color="red" {size} />
 	{:else}
 		<p>Waiting on {who}</p>
