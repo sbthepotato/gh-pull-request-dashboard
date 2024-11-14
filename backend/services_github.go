@@ -338,7 +338,10 @@ func process_pr(PrChannel chan<- *CustomPullRequest, wg *sync.WaitGroup, ctx con
 			if *review.State == statusRequested {
 				if review.Team != nil {
 					if review.Team.ReviewOrder != nil &&
-						*review.Team.ReviewOrder < currentPriority {
+						*review.Team.ReviewOrder < currentPriority &&
+						(customPr.Awaiting != nil &&
+							*customPr.Awaiting != "error" ||
+							customPr.Awaiting == nil) {
 
 						currentPriority = *review.Team.ReviewOrder
 						customPr.Awaiting = review.Team.Name
