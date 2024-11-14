@@ -17,5 +17,5 @@
 		{awaiting}
 	{/if}
 {:else}
-	<Icon name="alert-16" {size} color="red" />
+	<Icon name="alert-16" {size} color="yellow" />
 {/if}

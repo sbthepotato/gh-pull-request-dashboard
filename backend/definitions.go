@@ -28,6 +28,8 @@ type CustomPullRequest struct {
 	CreatedBy      *CustomUser `json:"created_by,omitempty"`
 	ReviewOverview []*Review   `json:"review_overview,omitempty"`
 	Awaiting       *string     `json:"awaiting,omitempty"`
+	ErrorMessage   *string     `json:"error_message,omitempty"`
+	ErrorText      *string     `json:"error_text,omitempty"`
 	Index          *int        `json:"-"`
 }
 

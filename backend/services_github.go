@@ -5,6 +5,7 @@ import (
 	"log"
 	"slices"
 	"sort"
+	"strconv"
 	"sync"
 
 	"github.com/google/go-github/v66/github"
@@ -86,11 +87,11 @@ func process_member(user_channel chan<- *CustomUser, wg *sync.WaitGroup, ctx con
 		log.Println("error fetching user", login, err)
 	}
 
-	custom_user := new(CustomUser)
-	custom_user.User = user
-	custom_user.Team = teams[*user.Login]
+	customUser := new(CustomUser)
+	customUser.User = user
+	customUser.Team = teams[*user.Login]
 
-	user_channel <- custom_user
+	user_channel <- customUser
 }
 
 /*
@@ -154,7 +155,7 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 
 	var wg sync.WaitGroup
 	idx := 0
-	pr_channel := make(chan *CustomPullRequest)
+	PrChannel := make(chan *CustomPullRequest)
 
 	for _, pr := range gh_prs {
 		if *pr.Draft {
@@ -162,18 +163,18 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 		}
 
 		wg.Add(1)
-		go process_pr(pr_channel, &wg, ctx, c, owner, repo, *pr.Number, users, teams, idx)
+		go process_pr(PrChannel, &wg, ctx, c, owner, repo, pr, users, teams, idx)
 		idx++ // manual index as we are skipping draft
 	}
 
 	go func() {
 		wg.Wait()
-		close(pr_channel)
+		close(PrChannel)
 	}()
 
 	prs := make([]*CustomPullRequest, idx)
 
-	for processed_pr := range pr_channel {
+	for processed_pr := range PrChannel {
 		prs[*processed_pr.Index] = processed_pr
 	}
 
@@ -208,147 +209,167 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 /*
 Process a pull request into the pull request channel
 */
-func process_pr(pr_channel chan<- *CustomPullRequest, wg *sync.WaitGroup, ctx context.Context, c *github.Client, owner string, repo string, pr_num int, users map[string]*CustomUser, teams map[string]*CustomTeam, idx int) {
+func process_pr(PrChannel chan<- *CustomPullRequest, wg *sync.WaitGroup, ctx context.Context, c *github.Client, owner string, repo string, pr *github.PullRequest, users map[string]*CustomUser, teams map[string]*CustomTeam, idx int) {
 
 	defer wg.Done()
 
-	detailed_pr, _, err := c.PullRequests.Get(ctx, owner, repo, pr_num)
+	customPr := new(CustomPullRequest)
+	var ErrorMessage string
+	var ErrorText string
+
+	detailedPr, _, err := c.PullRequests.Get(ctx, owner, repo, *pr.Number)
 	if err != nil {
-		log.Println("error fetching detailed pr info for pr", pr_num)
+		ErrorText = ErrorText + err.Error()
+		ErrorMessage = ErrorMessage + "error fetching detailed pr info for pr " + strconv.Itoa(*pr.Number)
+		log.Println(ErrorMessage, err.Error())
 	}
 
-	if *detailed_pr.Draft {
-		*detailed_pr.State = "draft"
+	if *detailedPr.Draft {
+		*detailedPr.State = "draft"
 	}
+
+	customPr.PullRequest = detailedPr
 
 	review := new(Review)
-	review_overview := make([]Review, 0)
-	user_review_list := make([]string, 0)
-	status_requested := "REVIEW_REQUESTED"
-	changes_requested := "Changes Requested"
-	status_approved := "APPROVED"
-	team_other := "OTHER"
+	reviewOverview := make([]Review, 0)
+	userReviewList := make([]string, 0)
+	statusRequested := "REVIEW_REQUESTED"
+	changesRequested := "Changes Requested"
+	statusApproved := "APPROVED"
+	teamOther := "other"
 
 	if teams == nil {
-		team_other = "review"
+		teamOther = "review"
 	}
 
 	// first populate requested teams and users. any previous state doesn't matter if you're requested
-	if detailed_pr.RequestedTeams != nil {
-		for _, req_team := range detailed_pr.RequestedTeams {
-			review.State = &status_requested
+	if detailedPr.RequestedTeams != nil {
+		for _, requestedTeam := range detailedPr.RequestedTeams {
+			review.State = &statusRequested
 
 			// if the team map isn't available, just use what we have
-			if val, ok := teams[*req_team.Slug]; ok {
+			if val, ok := teams[*requestedTeam.Slug]; ok {
 				review.Team = val
 			} else {
 				custom_team := new(CustomTeam)
-				custom_team.Team = req_team
+				custom_team.Team = requestedTeam
 				review.Team = custom_team
 			}
 
-			review.State = &status_requested
+			review.State = &statusRequested
 
-			review_overview = append(review_overview, *review)
+			reviewOverview = append(reviewOverview, *review)
 		}
 	}
 
-	if detailed_pr.RequestedReviewers != nil {
-		for _, req_review := range detailed_pr.RequestedReviewers {
+	if detailedPr.RequestedReviewers != nil {
+		for _, requestedUser := range detailedPr.RequestedReviewers {
 
 			// if the user map isn't available, just use what we have
-			if val, ok := users[*req_review.Login]; ok {
+			if val, ok := users[*requestedUser.Login]; ok {
 				review.User = val
 			} else {
-				custom_user := new(CustomUser)
-				custom_user.User = req_review
-				review.User = custom_user
+				customUser := new(CustomUser)
+				customUser.User = requestedUser
+				review.User = customUser
 			}
 
 			if review.User.Team != nil {
 				review.Team = teams[*review.User.Team.Slug]
 			}
-			review.State = &status_requested
+			review.State = &statusRequested
 
-			review_overview = append(review_overview, *review)
-			user_review_list = append(user_review_list, *req_review.Login)
+			reviewOverview = append(reviewOverview, *review)
+			userReviewList = append(userReviewList, *requestedUser.Login)
 		}
 	}
 
-	reviews, _, err := c.PullRequests.ListReviews(ctx, owner, repo, *detailed_pr.Number, nil)
+	reviews, _, err := c.PullRequests.ListReviews(ctx, owner, repo, *detailedPr.Number, nil)
 	if err != nil {
-		log.Println("error fetching pull request reviews for pr", pr_num)
+		ErrorText = ErrorText + err.Error()
+		ErrorMessage = ErrorMessage + "error fetching pull request reviews for pr " + strconv.Itoa(*pr.Number)
+		teamOther = "error"
+		customPr.Awaiting = &teamOther
+
+		log.Println(ErrorMessage, err.Error())
 	}
 
 	// loop in reverse because we're only interested in the most recent event
 	for i := len(reviews) - 1; i >= 0; i-- {
 		//for _, review := range reviews {
-		gh_review := reviews[i]
-		if (!slices.Contains(user_review_list, *gh_review.User.Login)) &&
-			(*detailed_pr.User.Login != *gh_review.User.Login) &&
-			(*gh_review.State != "COMMENTED") {
+		ghReview := reviews[i]
+		if (!slices.Contains(userReviewList, *ghReview.User.Login)) &&
+			(*detailedPr.User.Login != *ghReview.User.Login) &&
+			(*ghReview.State != "COMMENTED") {
 
 			review := new(Review)
-			user_review_list = append(user_review_list, *gh_review.User.Login)
-			if val, ok := users[*gh_review.User.Login]; ok {
+			userReviewList = append(userReviewList, *ghReview.User.Login)
+			if val, ok := users[*ghReview.User.Login]; ok {
 				review.User = val
 			} else {
-				custom_user := new(CustomUser)
-				custom_user.User = gh_review.User
-				review.User = custom_user
+				customUser := new(CustomUser)
+				customUser.User = ghReview.User
+				review.User = customUser
 			}
 
 			if review.User != nil && review.User.Team != nil {
 				review.Team = teams[*review.User.Team.Slug]
 			}
-			review.State = gh_review.State
-			review_overview = append(review_overview, *review)
+			review.State = ghReview.State
+			reviewOverview = append(reviewOverview, *review)
 
 		}
 	}
 
-	custom_pr := new(CustomPullRequest)
-	custom_pr.CreatedBy = users[*detailed_pr.User.Login]
-	custom_pr.PullRequest = detailed_pr
-	custom_pr.ReviewOverview = make([]*Review, 0)
-	custom_pr.Index = &idx
-	current_priority := 100
-	approved_count := 0
+	customPr.CreatedBy = users[*detailedPr.User.Login]
+	customPr.ReviewOverview = make([]*Review, 0)
+	customPr.Index = &idx
+	currentPriority := 100
+	approvedCount := 0
 
-	for _, custom_review := range review_overview {
-		if *custom_review.State != "DISMISSED" {
+	for _, customReview := range reviewOverview {
+		if *customReview.State != "DISMISSED" {
 
 			review := new(Review)
-			review.User = custom_review.User
-			review.Team = custom_review.Team
-			review.State = custom_review.State
+			review.User = customReview.User
+			review.Team = customReview.Team
+			review.State = customReview.State
 
-			if *review.State == status_requested {
+			if *review.State == statusRequested {
 				if review.Team != nil {
-					if review.Team.ReviewOrder != nil && *review.Team.ReviewOrder < current_priority {
-						current_priority = *review.Team.ReviewOrder
-						custom_pr.Awaiting = review.Team.Name
-					} else if custom_pr.Awaiting == nil {
-						custom_pr.Awaiting = &team_other
+					if review.Team.ReviewOrder != nil &&
+						*review.Team.ReviewOrder < currentPriority &&
+						(customPr.Awaiting != nil &&
+							*customPr.Awaiting != "error" ||
+							customPr.Awaiting == nil) {
+
+						currentPriority = *review.Team.ReviewOrder
+						customPr.Awaiting = review.Team.Name
+
+					} else if customPr.Awaiting == nil {
+						customPr.Awaiting = &teamOther
 					}
 				} else if review.Team == nil {
-					custom_pr.Awaiting = &team_other
+					customPr.Awaiting = &teamOther
 				}
 
-			} else if *review.State == "CHANGES_REQUESTED" {
-				custom_pr.Awaiting = &changes_requested
-				current_priority = -1
-			} else if *review.State == status_approved {
-				approved_count++
+			} else if *review.State == "changesRequested" {
+				customPr.Awaiting = &changesRequested
+				currentPriority = -1
+			} else if *review.State == statusApproved {
+				approvedCount++
 			}
-			custom_pr.ReviewOverview = append(custom_pr.ReviewOverview, review)
+			customPr.ReviewOverview = append(customPr.ReviewOverview, review)
 		}
 
-		if custom_pr.Awaiting == nil && approved_count >= 1 {
-			custom_pr.Awaiting = &status_approved
+		if customPr.Awaiting == nil && approvedCount >= 1 {
+			customPr.Awaiting = &statusApproved
 		}
 	}
 
-	pr_channel <- custom_pr
+	customPr.ErrorMessage = &ErrorMessage
+	customPr.ErrorText = &ErrorText
+
+	PrChannel <- customPr
 
 }
