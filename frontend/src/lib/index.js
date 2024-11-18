@@ -3,7 +3,7 @@ import { goto } from "$app/navigation";
 
 const goto_options = {
 	keepFocus: true,
-	noScroll: true,
+	noScroll: false,
 	replaceState: true,
 };
 

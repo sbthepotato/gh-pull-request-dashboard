@@ -34,6 +34,8 @@
 	onMount(() => {
 		get_pr_list();
 
+		created_by_filter = $page.url.searchParams.get("created_by");
+
 		checkboxes.auto_reload = string_to_bool(
 			$page.url.searchParams.get("auto_reload"),
 			false,
