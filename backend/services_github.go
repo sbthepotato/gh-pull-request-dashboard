@@ -353,7 +353,7 @@ func process_pr(PrChannel chan<- *CustomPullRequest, wg *sync.WaitGroup, ctx con
 					customPr.Awaiting = &teamOther
 				}
 
-			} else if *review.State == "changesRequested" {
+			} else if *review.State == "CHANGES_REQUESTED" {
 				customPr.Awaiting = &changesRequested
 				currentPriority = -1
 			} else if *review.State == statusApproved {
@@ -367,8 +367,11 @@ func process_pr(PrChannel chan<- *CustomPullRequest, wg *sync.WaitGroup, ctx con
 		}
 	}
 
-	customPr.ErrorMessage = &ErrorMessage
-	customPr.ErrorText = &ErrorText
+	if ErrorMessage != "" {
+		ErrorMessage = ErrorMessage + ". See the console on the server or the errorText field in the network tab for more information"
+		customPr.ErrorMessage = &ErrorMessage
+		customPr.ErrorText = &ErrorText
+	}
 
 	PrChannel <- customPr
 
