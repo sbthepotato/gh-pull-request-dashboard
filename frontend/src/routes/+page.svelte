@@ -34,6 +34,8 @@
 	onMount(() => {
 		get_pr_list();
 
+		created_by_filter = $page.url.searchParams.get("created_by");
+
 		checkboxes.auto_reload = string_to_bool(
 			$page.url.searchParams.get("auto_reload"),
 			false,
@@ -156,16 +158,15 @@
 						pr.created_by.name.toLowerCase().includes(search_query) ||
 						pr.base.label.toLowerCase().includes(search_query) ||
 						pr.number.toString().includes(search_query) ||
-						pr.review_overview.some(
+						pr.review_overview?.some(
 							(review) =>
 								review.state === "REVIEW_REQUESTED" &&
 								(review.user?.login.toLowerCase().includes(search_query) ||
 									review.user?.name.toLowerCase().includes(search_query)),
 						) ||
-						(pr.labels &&
-							pr.labels.some((label) =>
-								label.name.toLowerCase().includes(search_query),
-							))),
+						pr.labels?.some((label) =>
+							label.name.toLowerCase().includes(search_query),
+						)),
 			);
 		} else {
 			pr_list = result.pull_requests;

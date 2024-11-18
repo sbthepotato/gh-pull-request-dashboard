@@ -7,7 +7,7 @@
 	let size = "16px";
 </script>
 
-<div class="container">
+<div class="container {who}">
 	{#if who === "ready to merge"}
 		<p>Ready to Merge</p>
 		<Icon name="check-16" color="green" {size} />
@@ -19,6 +19,9 @@
 		<Icon name="git-pull-request-16" color="green" {size} />
 	{:else if who === "missing status"}
 		<p>Missing Status</p>
+		<Icon name="alert-16" color="yellow" {size} />
+	{:else if who === "error"}
+		<p>Error</p>
 		<Icon name="alert-16" color="red" {size} />
 	{:else}
 		<p>Waiting on {who}</p>
@@ -30,11 +33,16 @@
 
 <style>
 	div.container {
+		min-width: 96px;
 		display: inline-block;
 		padding: 8px;
 		margin: 8px;
 		border-radius: 8px;
 		border: 1px solid var(--border);
+	}
+
+	div.error {
+		border: 1px solid var(--red);
 	}
 
 	p {
