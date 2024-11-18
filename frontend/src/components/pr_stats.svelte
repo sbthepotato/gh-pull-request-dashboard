@@ -7,7 +7,7 @@
 	let size = "16px";
 </script>
 
-<div class="container">
+<div class="container {who}">
 	{#if who === "ready to merge"}
 		<p>Ready to Merge</p>
 		<Icon name="check-16" color="green" {size} />
@@ -33,11 +33,16 @@
 
 <style>
 	div.container {
+		min-width: 96px;
 		display: inline-block;
 		padding: 8px;
 		margin: 8px;
 		border-radius: 8px;
 		border: 1px solid var(--border);
+	}
+
+	div.error {
+		border: 1px solid var(--red);
 	}
 
 	p {
