@@ -7,10 +7,12 @@
 	import Icon from "../components/icon.svelte";
 
 	export let pr_list = [];
+	export let title = "";
 
 	let size = "12px";
 </script>
 
+<p>{title}</p>
 {#if pr_list != undefined && pr_list.length > 0}
 	<table>
 		<tbody>

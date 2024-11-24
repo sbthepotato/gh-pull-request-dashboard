@@ -150,7 +150,9 @@
 								checkboxes.include_requested &&
 								review.user?.login === created_by_filter &&
 								review.state === "REVIEW_REQUESTED",
-						)) &&
+						) ||
+						(pr.unassigned === true &&
+							pr.awaiting === created_by_filter_user.team?.name)) &&
 					(pr.title.toLowerCase().includes(search_query) ||
 						pr.awaiting?.toLowerCase().includes(search_query) ||
 						pr.created_by.login.toLowerCase().includes(search_query) ||
@@ -199,8 +201,8 @@
 	}
 
 	$: $page.url.search, handle_params();
-	$: result, get_filter(), get_current_user();
-	$: created_by_filter, get_filter(), get_current_user();
+	$: result, get_current_user(), get_filter();
+	$: created_by_filter, get_current_user(), get_filter();
 </script>
 
 <section class="pr-table">
@@ -220,14 +222,14 @@
 		{#if created_by_filter === null}
 			<PRTable {pr_list} />
 		{:else if created_by_filter !== null}
-			<p>Created by {created_by_filter}</p>
 			<PRTable
+				title="Created by {created_by_filter}"
 				pr_list={pr_list?.filter(
 					(pr) => pr.created_by.login === created_by_filter,
 				)} />
 
-			<p>{created_by_filter} requested</p>
 			<PRTable
+				title="{created_by_filter} requested"
 				pr_list={pr_list?.filter((pr) =>
 					pr.review_overview?.some(
 						(review) =>
@@ -236,12 +238,15 @@
 					),
 				)} />
 
-			<p>Unassigned waiting for {created_by_filter} team</p>
-			<PRTable
-				pr_list={pr_list?.filter(
-					(pr) =>
-						pr.unassigned && pr.awaiting === created_by_filter_user.team.name,
-				)} />
+			{#if created_by_filter_user.team}
+				<PRTable
+					title="Unassigned waiting for {created_by_filter_user.team.name}"
+					pr_list={pr_list?.filter(
+						(pr) =>
+							pr.unassigned === true &&
+							pr.awaiting === created_by_filter_user.team.name,
+					)} />
+			{/if}
 		{/if}
 	{/if}
 </section>
