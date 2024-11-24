@@ -20,7 +20,7 @@
 						{#if pr.created_by !== undefined}
 							<User user={pr.created_by} type="div" />
 						{:else}
-							<User user={pr.user} />
+							<User user={pr.user} type="div" />
 						{/if}
 					</td>
 
@@ -82,7 +82,7 @@
 						{#if pr.review_overview !== undefined}
 							{#each pr.review_overview as review}
 								{#if review.user !== undefined}
-									<User user={review.user} size="xs" />
+									<User user={review.user} size="xs" type="div" />
 								{:else if review.team !== undefined}
 									{review.team.name}
 								{:else}

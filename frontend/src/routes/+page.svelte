@@ -144,14 +144,12 @@
 				(pr) =>
 					(created_by_filter === null ||
 						pr.created_by.login === created_by_filter ||
-						(pr.review_overview &&
-							pr.review_overview.some(
-								(review) =>
-									review.user &&
-									review.user.login === created_by_filter &&
-									review.state === "REVIEW_REQUESTED" &&
-									checkboxes.include_requested,
-							))) &&
+						pr.review_overview?.some(
+							(review) =>
+								checkboxes.include_requested &&
+								review.user?.login === created_by_filter &&
+								review.state === "REVIEW_REQUESTED",
+						)) &&
 					(pr.title.toLowerCase().includes(search_query) ||
 						pr.awaiting?.toLowerCase().includes(search_query) ||
 						pr.created_by.login.toLowerCase().includes(search_query) ||
@@ -168,6 +166,9 @@
 							label.name.toLowerCase().includes(search_query),
 						)),
 			);
+
+			if (created_by_filter !== null) {
+			}
 		} else {
 			pr_list = result.pull_requests;
 		}
@@ -200,7 +201,25 @@
 				on:change={handle_searchbar_change}
 				on:input={handle_searchbar_change} />
 		{/if}
-		<PRTable {pr_list} />
+		{#if created_by_filter === null}
+			<PRTable {pr_list} />
+		{:else if created_by_filter !== null}
+			<p>Created by {created_by_filter}</p>
+			<PRTable
+				pr_list={pr_list?.filter(
+					(pr) => pr.created_by.login === created_by_filter,
+				)} />
+
+			<p>{created_by_filter} requested</p>
+			<PRTable
+				pr_list={pr_list?.filter((pr) =>
+					pr.review_overview?.some(
+						(review) =>
+							review.user?.login === created_by_filter &&
+							review.state === "REVIEW_REQUESTED",
+					),
+				)} />
+		{/if}
 	{/if}
 </section>
 
