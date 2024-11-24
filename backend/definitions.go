@@ -28,6 +28,7 @@ type CustomPullRequest struct {
 	CreatedBy      *CustomUser `json:"created_by,omitempty"`
 	ReviewOverview []*Review   `json:"review_overview,omitempty"`
 	Awaiting       *string     `json:"awaiting,omitempty"`
+	Unassigned     *bool       `json:"unassigned,omitempty"`
 	ErrorMessage   *string     `json:"error_message,omitempty"`
 	ErrorText      *string     `json:"error_text,omitempty"`
 	Index          *int        `json:"-"`
@@ -65,4 +66,5 @@ pull request list with accompanying information for list
 type PullRequestInfo struct {
 	PullRequests []*CustomPullRequest `json:"pull_requests,omitempty"`
 	ReviewTeams  []*CustomTeam        `json:"review_teams,omitempty"`
+	Users        []*CustomUser        `json:"users,omitempty"`
 }

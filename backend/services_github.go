@@ -167,17 +167,6 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 		idx++ // manual index as we are skipping draft
 	}
 
-	go func() {
-		wg.Wait()
-		close(PrChannel)
-	}()
-
-	prs := make([]*CustomPullRequest, idx)
-
-	for processed_pr := range PrChannel {
-		prs[*processed_pr.Index] = processed_pr
-	}
-
 	result := new(PullRequestInfo)
 
 	// sort the list of teams for the aggregation banner
@@ -198,6 +187,27 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 		}
 
 		result.ReviewTeams = sorted_teams
+	}
+
+	if users != nil {
+		userList := make([]*CustomUser, 0)
+
+		for _, user := range users {
+			userList = append(userList, user)
+		}
+
+		result.Users = userList
+	}
+
+	go func() {
+		wg.Wait()
+		close(PrChannel)
+	}()
+
+	prs := make([]*CustomPullRequest, idx)
+
+	for processed_pr := range PrChannel {
+		prs[*processed_pr.Index] = processed_pr
 	}
 
 	result.PullRequests = prs
@@ -325,6 +335,7 @@ func process_pr(PrChannel chan<- *CustomPullRequest, wg *sync.WaitGroup, ctx con
 	customPr.ReviewOverview = make([]*Review, 0)
 	customPr.Index = &idx
 	currentPriority := 100
+	unassigned := false
 	approvedCount := 0
 
 	for _, customReview := range reviewOverview {
@@ -337,6 +348,7 @@ func process_pr(PrChannel chan<- *CustomPullRequest, wg *sync.WaitGroup, ctx con
 
 			if *review.State == statusRequested {
 				if review.Team != nil {
+
 					if review.Team.ReviewOrder != nil &&
 						*review.Team.ReviewOrder < currentPriority &&
 						(customPr.Awaiting != nil &&
@@ -346,9 +358,25 @@ func process_pr(PrChannel chan<- *CustomPullRequest, wg *sync.WaitGroup, ctx con
 						currentPriority = *review.Team.ReviewOrder
 						customPr.Awaiting = review.Team.Name
 
+						if review.User == nil {
+							unassigned = true
+							customPr.Unassigned = &unassigned
+						} else {
+							unassigned = false
+							customPr.Unassigned = &unassigned
+						}
+
+					} else if review.Team.ReviewOrder != nil &&
+						*review.Team.ReviewOrder == currentPriority &&
+						review.User != nil {
+
+						unassigned = false
+						customPr.Unassigned = &unassigned
+
 					} else if customPr.Awaiting == nil {
 						customPr.Awaiting = &teamOther
 					}
+
 				} else if review.Team == nil {
 					customPr.Awaiting = &teamOther
 				}
@@ -356,14 +384,20 @@ func process_pr(PrChannel chan<- *CustomPullRequest, wg *sync.WaitGroup, ctx con
 			} else if *review.State == "CHANGES_REQUESTED" {
 				customPr.Awaiting = &changesRequested
 				currentPriority = -1
+				unassigned = false
+				customPr.Unassigned = &unassigned
+
 			} else if *review.State == statusApproved {
 				approvedCount++
 			}
 			customPr.ReviewOverview = append(customPr.ReviewOverview, review)
+
 		}
 
 		if customPr.Awaiting == nil && approvedCount >= 1 {
 			customPr.Awaiting = &statusApproved
+			unassigned = false
+			customPr.Unassigned = &unassigned
 		}
 	}
 

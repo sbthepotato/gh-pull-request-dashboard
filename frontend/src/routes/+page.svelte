@@ -29,6 +29,7 @@
 	let reload_interval;
 
 	let created_by_filter = "";
+	let created_by_filter_user = {};
 	let search_query = "";
 
 	onMount(() => {
@@ -174,6 +175,21 @@
 		}
 	}
 
+	function get_current_user() {
+		if (created_by_filter == null) {
+			created_by_filter_user = {};
+		} else {
+			if (result.users !== undefined) {
+				result.users.forEach((user) => {
+					if (user?.login === created_by_filter) {
+						created_by_filter_user = user;
+						return true;
+					}
+				});
+			}
+		}
+	}
+
 	function clear_filters() {
 		set_many_url_params({ created_by: null, include_requested: null });
 		created_by_filter = null;
@@ -183,8 +199,8 @@
 	}
 
 	$: $page.url.search, handle_params();
-	$: result, get_filter();
-	$: created_by_filter, get_filter();
+	$: result, get_filter(), get_current_user();
+	$: created_by_filter, get_filter(), get_current_user();
 </script>
 
 <section class="pr-table">
@@ -218,6 +234,13 @@
 							review.user?.login === created_by_filter &&
 							review.state === "REVIEW_REQUESTED",
 					),
+				)} />
+
+			<p>Unassigned waiting for {created_by_filter} team</p>
+			<PRTable
+				pr_list={pr_list?.filter(
+					(pr) =>
+						pr.unassigned && pr.awaiting === created_by_filter_user.team.name,
 				)} />
 		{/if}
 	{/if}
