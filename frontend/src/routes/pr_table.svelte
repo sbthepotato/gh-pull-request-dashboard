@@ -103,6 +103,9 @@
 {/if}
 
 <style>
+	p {
+		margin-bottom: 2px;
+	}
 	table {
 		width: 100%;
 		border-spacing: 0;

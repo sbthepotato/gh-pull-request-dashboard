@@ -24,7 +24,6 @@
 	let checkboxes = {
 		auto_reload: false,
 		show_search: false,
-		include_requested: true,
 	};
 	let reload_interval;
 
@@ -45,11 +44,6 @@
 		checkboxes.show_search = string_to_bool(
 			$page.url.searchParams.get("show_search"),
 			false,
-		);
-
-		checkboxes.include_requested = string_to_bool(
-			$page.url.searchParams.get("include_requested"),
-			true,
 		);
 	});
 
@@ -107,15 +101,6 @@
 					clearInterval(reload_interval);
 				}
 				break;
-			case "include_requested":
-				if (!checked) {
-					set_url_param("include_requested", "n");
-					get_filter();
-				} else {
-					set_url_param("include_requested");
-					get_filter();
-				}
-				break;
 		}
 	}
 
@@ -130,10 +115,6 @@
 			$page.url.searchParams.get("show_search"),
 			false,
 		);
-		checkboxes.include_requested = string_to_bool(
-			$page.url.searchParams.get("include_requested"),
-			true,
-		);
 	}
 
 	function get_filter() {
@@ -147,7 +128,6 @@
 						pr.created_by.login === created_by_filter ||
 						pr.review_overview?.some(
 							(review) =>
-								checkboxes.include_requested &&
 								review.user?.login === created_by_filter &&
 								review.state === "REVIEW_REQUESTED",
 						) ||
@@ -193,9 +173,8 @@
 	}
 
 	function clear_filters() {
-		set_many_url_params({ created_by: null, include_requested: null });
+		set_many_url_params({ created_by: null });
 		created_by_filter = null;
-		checkboxes.include_requested = true;
 		search_query = "";
 		get_filter();
 	}
@@ -229,7 +208,7 @@
 				)} />
 
 			<PRTable
-				title="{created_by_filter} requested"
+				title="{created_by_filter} requested reviewer"
 				pr_list={pr_list?.filter((pr) =>
 					pr.review_overview?.some(
 						(review) =>
@@ -240,7 +219,8 @@
 
 			{#if created_by_filter_user.team}
 				<PRTable
-					title="Unassigned waiting for {created_by_filter_user.team.name}"
+					title="Waiting on {created_by_filter_user.team
+						.name} - Not assigned to anyone else"
 					pr_list={pr_list?.filter(
 						(pr) =>
 							pr.unassigned === true &&
@@ -264,13 +244,7 @@
 		id="show_search"
 		checked={checkboxes.show_search}
 		on:change={handle_checkbox_change}>Show Search</Checkbox>
-	{#if created_by_filter !== null}
-		<Checkbox
-			id="include_requested"
-			checked={checkboxes.include_requested}
-			on:change={handle_checkbox_change}>Include Requested</Checkbox>
-	{/if}
-	{#if created_by_filter !== null || search_query !== "" || !checkboxes.include_requested}
+	{#if created_by_filter !== null || search_query !== ""}
 		<Button color="blue" on_click={() => clear_filters()}>Clear Filters</Button>
 	{/if}
 </section>
