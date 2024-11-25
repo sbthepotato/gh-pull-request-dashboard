@@ -219,6 +219,7 @@
 
 			{#if created_by_filter_user.team}
 				<PRTable
+					show_empty={false}
 					title="Waiting on {created_by_filter_user.team
 						.name} - Not assigned to anyone else"
 					pr_list={pr_list?.filter(
