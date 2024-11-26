@@ -68,19 +68,3 @@ type PullRequestInfo struct {
 	ReviewTeams  []*CustomTeam        `json:"review_teams,omitempty"`
 	Users        []*CustomUser        `json:"users,omitempty"`
 }
-
-/*
-repository with enabled field
-*/
-type CustomRepo struct {
-	*github.Repository
-	Enabled *bool `json:"enabled,omitempty"`
-}
-
-/*
-POST to set repo state
-*/
-type setRepo struct {
-	Name    string `json:"name,omitempty"`
-	Enabled bool   `json:"enabled,omitempty"`
-}

@@ -13,9 +13,6 @@ import (
 
 var mu sync.Mutex
 
-var last_fetched_repos time.Time
-var cached_repos []*CustomRepo
-
 var last_fetched_teams time.Time
 var cached_teams []*CustomTeam
 
@@ -28,90 +25,6 @@ var cached_prs *PullRequestInfo
 func hello_go(w http.ResponseWriter, r *http.Request) {
 	setHeaders(&w, "text")
 	w.Write([]byte("Hello, from the golang backend " + time.Now().String()))
-}
-
-func get_repos(ctx context.Context, c *github.Client, owner string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		setHeaders(&w, "json")
-
-		mu.Lock()
-		defer mu.Unlock()
-
-		var err error
-
-		refresh := r.URL.Query().Get("refresh")
-		currentTime := time.Now()
-
-		if refresh == "y" {
-			cached_repos, err = gh_get_repos(ctx, c, owner)
-
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-		} else if (currentTime.Sub(last_fetched_repos).Hours() < 1) || (len(cached_repos) == 0) {
-
-		}
-
-		json_data, err := json.Marshal(cached_repos)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.Write(json_data)
-
-	}
-}
-
-func set_repos(w http.ResponseWriter, r *http.Request) {
-	setHeaders(&w, "text")
-
-	mu.Lock()
-	defer mu.Unlock()
-
-	if r.Method != http.MethodPost {
-		http.Error(w, "invalid request method", http.StatusMethodNotAllowed)
-		return
-	}
-
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "Failed to read request body", http.StatusBadRequest)
-		return
-	}
-
-	defer r.Body.Close()
-
-	new_repo_data := make([]setRepo, 0)
-	cached_repos = make([]*CustomRepo, 0)
-
-	err = json.Unmarshal(body, &new_repo_data)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	team, err := read_teams(false)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	for _, repo := range new_repo_data {
-		*team_map[team.Slug].ReviewEnabled = team.ReviewEnabled
-		*team_map[team.Slug].ReviewOrder = team.ReviewOrder
-
-		if team.ReviewEnabled {
-			active_team_map[team.Slug] = team_map[team.Slug]
-		}
-
-		updated_team := team_map[team.Slug]
-
-		cached_teams = append(cached_teams, updated_team)
-	}
-
-	w.Write([]byte("Team data saved successfully"))
 }
 
 func get_teams(ctx context.Context, c *github.Client, owner string) http.HandlerFunc {
@@ -137,6 +50,8 @@ func get_teams(ctx context.Context, c *github.Client, owner string) http.Handler
 			last_fetched_teams = time.Now()
 
 		} else if (currentTime.Sub(last_fetched_teams).Hours() < 1) || (len(cached_teams) == 0) {
+
+			cached_teams = make([]*CustomTeam, 0)
 
 			teams, err := read_teams(false)
 			if err != nil {

@@ -61,11 +61,6 @@
 
 <h2>Team Configuration</h2>
 
-<Button color="green" on_click={() => get_teams(true)}>
-	hard refresh team list
-</Button>
-<Button color="green" on_click={() => set_teams()}>Save Teams</Button>
-
 {#if err !== ""}
 	<p>
 		{err}
@@ -113,6 +108,11 @@
 {:else}
 	<p>No teams found</p>
 {/if}
+
+<Button color="green" on_click={() => get_teams(true)}>
+	hard refresh team list
+</Button>
+<Button color="green" on_click={() => set_teams()}>Save Teams</Button>
 
 <style>
 </style>
