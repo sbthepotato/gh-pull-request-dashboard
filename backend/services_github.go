@@ -59,7 +59,7 @@ func gh_get_members(ctx context.Context, c *github.Client, owner string) ([]*Cus
 		ListOptions: github.ListOptions{PerPage: 100},
 	}
 
-	var all_users []*github.User
+	var allUsers []*github.User
 
 	for {
 		users, resp, err := c.Organizations.ListMembers(ctx, owner, opt)
@@ -67,7 +67,7 @@ func gh_get_members(ctx context.Context, c *github.Client, owner string) ([]*Cus
 			return nil, err
 		}
 
-		all_users = append(all_users, users...)
+		allUsers = append(allUsers, users...)
 
 		if resp.NextPage == 0 {
 			break
@@ -80,7 +80,7 @@ func gh_get_members(ctx context.Context, c *github.Client, owner string) ([]*Cus
 		return nil, err
 	}
 
-	user_teams := make(map[string]*CustomTeam)
+	userTeams := make(map[string]*CustomTeam)
 
 	// find team members of each team in org and add it to a map
 	for _, team := range teams {
@@ -95,7 +95,7 @@ func gh_get_members(ctx context.Context, c *github.Client, owner string) ([]*Cus
 		}
 
 		for _, team_member := range team_members {
-			user_teams[*team_member.Login] = team
+			userTeams[*team_member.Login] = team
 		}
 	}
 
@@ -103,9 +103,9 @@ func gh_get_members(ctx context.Context, c *github.Client, owner string) ([]*Cus
 	user_channel := make(chan *CustomUser)
 
 	// go through all org members to get extended user info, also add team info
-	for _, member := range all_users {
+	for _, member := range allUsers {
 		wg.Add(1)
-		go process_user(user_channel, &wg, ctx, c, *member.Login, user_teams)
+		go process_user(user_channel, &wg, ctx, c, *member.Login, userTeams)
 	}
 
 	go func() {
@@ -113,17 +113,17 @@ func gh_get_members(ctx context.Context, c *github.Client, owner string) ([]*Cus
 		close(user_channel)
 	}()
 
-	user_map := make(map[string]*CustomUser)
-	custom_users := make([]*CustomUser, 0)
+	userMap := make(map[string]*CustomUser)
+	customUsers := make([]*CustomUser, 0)
 
-	for processed_user := range user_channel {
-		user_map[*processed_user.Login] = processed_user
-		custom_users = append(custom_users, processed_user)
+	for processedUser := range user_channel {
+		userMap[*processedUser.Login] = processedUser
+		customUsers = append(customUsers, processedUser)
 	}
 
-	write_users(user_map)
+	write_users(userMap)
 
-	return custom_users, nil
+	return customUsers, nil
 }
 
 /*
