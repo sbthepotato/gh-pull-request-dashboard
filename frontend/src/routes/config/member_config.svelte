@@ -64,7 +64,6 @@
 {:else if loading}
 	<Loading text="Loading Members..." size="64px" />
 {:else if result.length > 0}
-	<p>{result.length} members found</p>
 	<table>
 		<thead>
 			<tr>
@@ -87,6 +86,7 @@
 			{/each}
 		</tbody>
 	</table>
+	<p>{result.length} members found</p>
 {:else}
 	<p>No members found</p>
 {/if}

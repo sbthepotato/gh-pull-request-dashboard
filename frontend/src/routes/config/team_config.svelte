@@ -66,7 +66,6 @@
 		{err}
 	</p>
 {:else if teams.length > 0}
-	<p>{teams.length} teams found</p>
 	<table>
 		<thead>
 			<tr>
@@ -100,6 +99,7 @@
 			{/each}
 		</tbody>
 	</table>
+	<p>{teams.length} teams found</p>
 	{#if result !== ""}
 		<p>
 			{result}
