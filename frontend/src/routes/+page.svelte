@@ -132,6 +132,7 @@
 								review.state === "REVIEW_REQUESTED",
 						) ||
 						(pr.unassigned === true &&
+							pr.created_by.login != created_by_filter &&
 							pr.awaiting === created_by_filter_user.team?.name)) &&
 					(pr.title.toLowerCase().includes(search_query) ||
 						pr.awaiting?.toLowerCase().includes(search_query) ||
@@ -225,6 +226,7 @@
 					pr_list={pr_list?.filter(
 						(pr) =>
 							pr.unassigned === true &&
+							pr.created_by.login != created_by_filter &&
 							pr.awaiting === created_by_filter_user.team.name,
 					)} />
 			{/if}
