@@ -65,15 +65,28 @@
 	<Loading text="Loading Members..." size="64px" />
 {:else if result.length > 0}
 	<p>{result.length} members found</p>
-	{#each teams as team}
-		<div class="team-container">
-			<h2>{team.name}</h2>
-
-			{#each team_members[team.name] as member}
-				<User user={member} />
+	<table>
+		<thead>
+			<tr>
+				<th>Team Name</th>
+				<th>Members</th>
+			</tr>
+		</thead>
+		<tbody>
+			{#each teams as team}
+				<tr>
+					<td class="team-name">{team.name}</td>
+					<td>
+						{#each team_members[team.name] as member}
+							<div class="user-container">
+								<User user={member} />
+							</div>
+						{/each}
+					</td>
+				</tr>
 			{/each}
-		</div>
-	{/each}
+		</tbody>
+	</table>
 {:else}
 	<p>No members found</p>
 {/if}
@@ -83,9 +96,13 @@
 </Button>
 
 <style>
-	div.team-container {
-		border: 1px solid var(--border-blue);
+	.team-name {
+		font-weight: bold;
+	}
+
+	.user-container {
+		display: inline-flex;
+		align-items: center;
 		margin: 8px;
-		border-radius: 5px;
 	}
 </style>
