@@ -24,11 +24,11 @@
 	let checkboxes = {
 		auto_reload: false,
 		show_search: false,
-		include_requested: true,
 	};
 	let reload_interval;
 
 	let created_by_filter = "";
+	let created_by_filter_user = {};
 	let search_query = "";
 
 	onMount(() => {
@@ -44,11 +44,6 @@
 		checkboxes.show_search = string_to_bool(
 			$page.url.searchParams.get("show_search"),
 			false,
-		);
-
-		checkboxes.include_requested = string_to_bool(
-			$page.url.searchParams.get("include_requested"),
-			true,
 		);
 	});
 
@@ -106,15 +101,6 @@
 					clearInterval(reload_interval);
 				}
 				break;
-			case "include_requested":
-				if (!checked) {
-					set_url_param("include_requested", "n");
-					get_filter();
-				} else {
-					set_url_param("include_requested");
-					get_filter();
-				}
-				break;
 		}
 	}
 
@@ -129,10 +115,6 @@
 			$page.url.searchParams.get("show_search"),
 			false,
 		);
-		checkboxes.include_requested = string_to_bool(
-			$page.url.searchParams.get("include_requested"),
-			true,
-		);
 	}
 
 	function get_filter() {
@@ -144,14 +126,13 @@
 				(pr) =>
 					(created_by_filter === null ||
 						pr.created_by.login === created_by_filter ||
-						(pr.review_overview &&
-							pr.review_overview.some(
-								(review) =>
-									review.user &&
-									review.user.login === created_by_filter &&
-									review.state === "REVIEW_REQUESTED" &&
-									checkboxes.include_requested,
-							))) &&
+						pr.review_overview?.some(
+							(review) =>
+								review.user?.login === created_by_filter &&
+								review.state === "REVIEW_REQUESTED",
+						) ||
+						(pr.unassigned === true &&
+							pr.awaiting === created_by_filter_user.team?.name)) &&
 					(pr.title.toLowerCase().includes(search_query) ||
 						pr.awaiting?.toLowerCase().includes(search_query) ||
 						pr.created_by.login.toLowerCase().includes(search_query) ||
@@ -168,22 +149,39 @@
 							label.name.toLowerCase().includes(search_query),
 						)),
 			);
+
+			if (created_by_filter !== null) {
+			}
 		} else {
 			pr_list = result.pull_requests;
 		}
 	}
 
+	function get_current_user() {
+		if (created_by_filter == null) {
+			created_by_filter_user = {};
+		} else {
+			if (result.users !== undefined) {
+				result.users.forEach((user) => {
+					if (user?.login === created_by_filter) {
+						created_by_filter_user = user;
+						return true;
+					}
+				});
+			}
+		}
+	}
+
 	function clear_filters() {
-		set_many_url_params({ created_by: null, include_requested: null });
+		set_many_url_params({ created_by: null });
 		created_by_filter = null;
-		checkboxes.include_requested = true;
 		search_query = "";
 		get_filter();
 	}
 
 	$: $page.url.search, handle_params();
-	$: result, get_filter();
-	$: created_by_filter, get_filter();
+	$: result, get_current_user(), get_filter();
+	$: created_by_filter, get_current_user(), get_filter();
 </script>
 
 <section class="pr-table">
@@ -200,7 +198,37 @@
 				on:change={handle_searchbar_change}
 				on:input={handle_searchbar_change} />
 		{/if}
-		<PRTable {pr_list} />
+		{#if created_by_filter === null}
+			<PRTable {pr_list} />
+		{:else if created_by_filter !== null}
+			<PRTable
+				title="Created by {created_by_filter}"
+				pr_list={pr_list?.filter(
+					(pr) => pr.created_by.login === created_by_filter,
+				)} />
+
+			<PRTable
+				title="{created_by_filter} requested reviewer"
+				pr_list={pr_list?.filter((pr) =>
+					pr.review_overview?.some(
+						(review) =>
+							review.user?.login === created_by_filter &&
+							review.state === "REVIEW_REQUESTED",
+					),
+				)} />
+
+			{#if created_by_filter_user.team}
+				<PRTable
+					show_empty={false}
+					title="Waiting on {created_by_filter_user.team
+						.name} - Not assigned to anyone else"
+					pr_list={pr_list?.filter(
+						(pr) =>
+							pr.unassigned === true &&
+							pr.awaiting === created_by_filter_user.team.name,
+					)} />
+			{/if}
+		{/if}
 	{/if}
 </section>
 
@@ -217,13 +245,7 @@
 		id="show_search"
 		checked={checkboxes.show_search}
 		on:change={handle_checkbox_change}>Show Search</Checkbox>
-	{#if created_by_filter !== null}
-		<Checkbox
-			id="include_requested"
-			checked={checkboxes.include_requested}
-			on:change={handle_checkbox_change}>Include Requested</Checkbox>
-	{/if}
-	{#if created_by_filter !== null || search_query !== "" || !checkboxes.include_requested}
+	{#if created_by_filter !== null || search_query !== ""}
 		<Button color="blue" on_click={() => clear_filters()}>Clear Filters</Button>
 	{/if}
 </section>
