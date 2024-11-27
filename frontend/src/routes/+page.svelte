@@ -129,10 +129,13 @@
 						pr.review_overview?.some(
 							(review) =>
 								review.user?.login === created_by_filter &&
-								review.state === "REVIEW_REQUESTED",
+								review.state === "REVIEW_REQUESTED" &&
+								pr.awaiting !== "Changes Requested",
 						) ||
 						(pr.unassigned === true &&
-							pr.awaiting === created_by_filter_user.team?.name)) &&
+							pr.created_by.login != created_by_filter &&
+							pr.awaiting === created_by_filter_user.team?.name &&
+							pr.awaiting !== "Changes Requested")) &&
 					(pr.title.toLowerCase().includes(search_query) ||
 						pr.awaiting?.toLowerCase().includes(search_query) ||
 						pr.created_by.login.toLowerCase().includes(search_query) ||
@@ -225,6 +228,7 @@
 					pr_list={pr_list?.filter(
 						(pr) =>
 							pr.unassigned === true &&
+							pr.created_by.login != created_by_filter &&
 							pr.awaiting === created_by_filter_user.team.name,
 					)} />
 			{/if}

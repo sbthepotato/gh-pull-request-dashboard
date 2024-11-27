@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/google/go-github/v66/github"
+	"github.com/google/go-github/v67/github"
 )
 
 /*
@@ -16,70 +16,96 @@ get members and link them up to one of the active teams
 */
 func gh_get_members(ctx context.Context, c *github.Client, owner string) ([]*CustomUser, error) {
 
-	opt := &github.ListMembersOptions{
+	listMembersOpt := &github.ListMembersOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
 	}
 
-	// get members of org
-	members, _, err := c.Organizations.ListMembers(ctx, owner, opt)
-	if err != nil {
-		return nil, err
-	}
+	var users []*github.User
 
-	users := make([]*CustomUser, 0)
-	userTeams := make(map[string]*CustomTeam)
+	for {
+		respUsers, resp, err := c.Organizations.ListMembers(ctx, owner, listMembersOpt)
+		if err != nil {
+			return nil, err
+		}
+
+		users = append(users, respUsers...)
+
+		if resp.NextPage == 0 {
+			break
+		}
+		listMembersOpt.Page = resp.NextPage
+	}
 
 	teams, err := read_teams(true)
 	if err != nil {
 		return nil, err
 	}
 
+	userTeams := make(map[string]*CustomTeam)
+
 	// find team members of each team in org and add it to a map
 	for _, team := range teams {
 
-		if (team.ReviewEnabled == nil) || (!*team.ReviewEnabled) {
+		if team.ReviewEnabled == nil || !*team.ReviewEnabled {
 			continue
 		}
 
-		team_members, _, err := c.Teams.ListTeamMembersBySlug(ctx, owner, *team.Slug, nil)
-		if err != nil {
-			return nil, err
+		teamMembersOpt := &github.TeamListTeamMembersOptions{
+			ListOptions: github.ListOptions{PerPage: 100},
 		}
 
-		for _, team_member := range team_members {
-			userTeams[*team_member.Login] = team
+		var teamMembers []*github.User
+
+		for {
+			respMembers, resp, err := c.Teams.ListTeamMembersBySlug(ctx, owner, *team.Slug, teamMembersOpt)
+			if err != nil {
+				return nil, err
+			}
+
+			teamMembers = append(teamMembers, respMembers...)
+
+			if resp.NextPage == 0 {
+				break
+			}
+			teamMembersOpt.Page = resp.NextPage
+		}
+
+		for _, teamUser := range teamMembers {
+			userTeams[*teamUser.Login] = team
 		}
 	}
 
 	var wg sync.WaitGroup
-	user_channel := make(chan *CustomUser)
+	userChannel := make(chan *CustomUser)
 
 	// go through all org members to get extended user info, also add team info
-	for _, member := range members {
+	for _, user := range users {
 		wg.Add(1)
-		go process_member(user_channel, &wg, ctx, c, *member.Login, userTeams)
+		go process_user(userChannel, &wg, ctx, c, *user.Login, userTeams)
 	}
 
 	go func() {
 		wg.Wait()
-		close(user_channel)
+		close(userChannel)
 	}()
 
 	userMap := make(map[string]*CustomUser)
-	for processed_user := range user_channel {
-		userMap[*processed_user.Login] = processed_user
-		users = append(users, processed_user)
+	customUsers := make([]*CustomUser, 0)
+
+	for processedUser := range userChannel {
+		userMap[*processedUser.Login] = processedUser
+		customUsers = append(customUsers, processedUser)
 	}
 
 	write_users(userMap)
 
-	return users, nil
+	return customUsers, nil
 }
 
 /*
 process a member into the member channel
 */
-func process_member(user_channel chan<- *CustomUser, wg *sync.WaitGroup, ctx context.Context, c *github.Client, login string, teams map[string]*CustomTeam) {
+func process_user(userChannel chan<- *CustomUser, wg *sync.WaitGroup, ctx context.Context, c *github.Client, login string, teams map[string]*CustomTeam) {
 	defer wg.Done()
 
 	user, _, err := c.Users.Get(ctx, login)
@@ -91,7 +117,7 @@ func process_member(user_channel chan<- *CustomUser, wg *sync.WaitGroup, ctx con
 	customUser.User = user
 	customUser.Team = teams[*user.Login]
 
-	user_channel <- customUser
+	userChannel <- customUser
 }
 
 /*
@@ -108,24 +134,24 @@ func gh_get_teams(ctx context.Context, c *github.Client, owner string) ([]*Custo
 		return nil, err
 	}
 
-	detailed_teams := make([]*CustomTeam, 0)
+	customTeams := make([]*CustomTeam, 0)
 	teamMap := make(map[string]*CustomTeam)
-	default_review := false
-	default_order := 0
+	defaultReview := false
+	defaultOrder := 0
 
 	for _, team := range teams {
-		Custom_Team := new(CustomTeam)
-		Custom_Team.Team = team
-		Custom_Team.ReviewEnabled = &default_review
-		Custom_Team.ReviewOrder = &default_order
+		customTeam := new(CustomTeam)
+		customTeam.Team = team
+		customTeam.ReviewEnabled = &defaultReview
+		customTeam.ReviewOrder = &defaultOrder
 
-		teamMap[*team.Slug] = Custom_Team
-		detailed_teams = append(detailed_teams, Custom_Team)
+		teamMap[*team.Slug] = customTeam
+		customTeams = append(customTeams, customTeam)
 	}
 
 	write_teams(teamMap, false)
 
-	return detailed_teams, nil
+	return customTeams, nil
 }
 
 /*
@@ -138,9 +164,21 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 		ListOptions: github.ListOptions{PerPage: 100},
 	}
 
-	gh_prs, _, err := c.PullRequests.List(ctx, owner, repo, opts)
-	if err != nil {
-		return nil, err
+	var ghPrs []*github.PullRequest
+
+	for {
+		respPrs, resp, err := c.PullRequests.List(ctx, owner, repo, opts)
+		if err != nil {
+			return nil, err
+		}
+
+		ghPrs = append(ghPrs, respPrs...)
+
+		if resp.NextPage == 0 {
+			break
+		}
+
+		opts.Page = resp.NextPage
 	}
 
 	users, err := read_users()
@@ -157,7 +195,7 @@ func gh_get_pr_list(ctx context.Context, c *github.Client, owner string, repo st
 	idx := 0
 	PrChannel := make(chan *CustomPullRequest)
 
-	for _, pr := range gh_prs {
+	for _, pr := range ghPrs {
 		if *pr.Draft {
 			continue
 		}
@@ -294,14 +332,28 @@ func process_pr(PrChannel chan<- *CustomPullRequest, wg *sync.WaitGroup, ctx con
 		}
 	}
 
-	reviews, _, err := c.PullRequests.ListReviews(ctx, owner, repo, *detailedPr.Number, nil)
-	if err != nil {
-		ErrorText = ErrorText + err.Error()
-		ErrorMessage = ErrorMessage + "error fetching pull request reviews for pr " + strconv.Itoa(*pr.Number)
-		teamOther = "error"
-		customPr.Awaiting = &teamOther
+	var reviews []*github.PullRequestReview
 
-		log.Println(ErrorMessage, err.Error())
+	opt := &github.ListOptions{PerPage: 100}
+
+	for {
+		respReviews, resp, err := c.PullRequests.ListReviews(ctx, owner, repo, *detailedPr.Number, opt)
+		if err != nil {
+			ErrorText = ErrorText + err.Error()
+			ErrorMessage = ErrorMessage + "error fetching pull request reviews for pr " + strconv.Itoa(*pr.Number)
+			teamOther = "error"
+			customPr.Awaiting = &teamOther
+
+			log.Println(ErrorMessage, err.Error())
+		}
+
+		reviews = append(reviews, respReviews...)
+
+		if resp.NextPage == 0 {
+			break
+		}
+		opt.Page = resp.NextPage
+
 	}
 
 	// loop in reverse because we're only interested in the most recent event

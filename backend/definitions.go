@@ -1,6 +1,6 @@
 package main
 
-import "github.com/google/go-github/v66/github"
+import "github.com/google/go-github/v67/github"
 
 /*
 core application settings
@@ -52,7 +52,7 @@ type CustomTeam struct {
 }
 
 /*
-the POST from frontend to set team info
+POST to set team state
 */
 type SetTeam struct {
 	Slug          string `json:"slug,omitempty"`

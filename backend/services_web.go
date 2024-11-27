@@ -8,19 +8,19 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/go-github/v66/github"
+	"github.com/google/go-github/v67/github"
 )
 
 var mu sync.Mutex
-
-var last_fetched_prs time.Time
-var cached_prs *PullRequestInfo
 
 var last_fetched_teams time.Time
 var cached_teams []*CustomTeam
 
 var last_fetched_members time.Time
 var cached_members []*CustomUser
+
+var last_fetched_prs time.Time
+var cached_prs *PullRequestInfo
 
 func hello_go(w http.ResponseWriter, r *http.Request) {
 	setHeaders(&w, "text")
@@ -148,7 +148,7 @@ func get_members(ctx context.Context, c *github.Client, owner string) http.Handl
 				return
 			}
 
-		} else if (currentTime.Sub(last_fetched_members).Hours() < 1) || (len(cached_members) == 0) {
+		} else if currentTime.Sub(last_fetched_members).Hours() < 1 || (len(cached_members) == 0) {
 			cached_members = make([]*CustomUser, 0)
 			users, err := read_users()
 			if err != nil {
@@ -181,7 +181,7 @@ func get_pr_list(ctx context.Context, c *github.Client, owner string, repo strin
 		refresh := r.URL.Query().Get("refresh")
 		currentTime := time.Now()
 
-		if (currentTime.Sub(last_fetched_prs).Minutes() > 5) || (refresh == "y") && (currentTime.Sub(last_fetched_prs).Minutes() > 2) {
+		if currentTime.Sub(last_fetched_prs).Minutes() > 5 || (refresh == "y" && currentTime.Sub(last_fetched_prs).Minutes() > 2) {
 			cached_prs = new(PullRequestInfo)
 
 			prs, err := gh_get_pr_list(ctx, c, owner, repo)

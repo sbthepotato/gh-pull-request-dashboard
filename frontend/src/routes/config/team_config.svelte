@@ -61,19 +61,15 @@
 
 <h2>Team Configuration</h2>
 
-<Button color="green" on_click={() => get_teams(true)}
-	>Hard refresh team list</Button>
-<Button color="green" on_click={() => set_teams()}>Save Teams</Button>
-
 {#if err !== ""}
 	<p>
 		{err}
 	</p>
 {:else if teams.length > 0}
-	<p>{teams.length} teams found</p>
 	<table>
 		<thead>
 			<tr>
+				<th></th>
 				<th>Enable Team</th>
 				<th>Review Order</th>
 			</tr>
@@ -82,14 +78,14 @@
 			{#each teams as team}
 				<tr>
 					<td>
-						<label>
-							{team.name}
-							<input
-								type="checkbox"
-								id={team.slug}
-								name={team.slug}
-								bind:checked={team.review_enabled} />
-						</label>
+						{team.name}
+					</td>
+					<td>
+						<input
+							type="checkbox"
+							id={team.slug}
+							name={team.slug}
+							bind:checked={team.review_enabled} />
 					</td>
 					<td>
 						<input
@@ -103,6 +99,7 @@
 			{/each}
 		</tbody>
 	</table>
+	<p>{teams.length} teams found</p>
 	{#if result !== ""}
 		<p>
 			{result}
@@ -111,6 +108,11 @@
 {:else}
 	<p>No teams found</p>
 {/if}
+
+<Button color="green" on_click={() => get_teams(true)}>
+	hard refresh team list
+</Button>
+<Button color="green" on_click={() => set_teams()}>Save Teams</Button>
 
 <style>
 </style>
