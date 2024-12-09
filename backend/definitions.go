@@ -1,6 +1,10 @@
 package main
 
-import "github.com/google/go-github/v66/github"
+import (
+	"time"
+
+	"github.com/google/go-github/v66/github"
+)
 
 /*
 core application settings
@@ -67,6 +71,7 @@ type PullRequestInfo struct {
 	PullRequests []*CustomPullRequest `json:"pull_requests,omitempty"`
 	ReviewTeams  []*CustomTeam        `json:"review_teams,omitempty"`
 	Users        []*CustomUser        `json:"users,omitempty"`
+	Updated      *time.Time           `json:"-"`
 }
 
 /*

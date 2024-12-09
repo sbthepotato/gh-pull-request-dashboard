@@ -13,9 +13,6 @@ import (
 
 var mu sync.Mutex
 
-var last_fetched_repos time.Time
-var cached_repos []*CustomRepo
-
 var last_fetched_teams time.Time
 var cached_teams []*CustomTeam
 
@@ -37,29 +34,20 @@ func get_repos(ctx context.Context, c *github.Client, owner string) http.Handler
 		mu.Lock()
 		defer mu.Unlock()
 
-		var err error
+		repos, err := gh_get_repos(ctx, c, owner)
 
-		refresh := r.URL.Query().Get("refresh")
-		currentTime := time.Now()
-
-		if refresh == "y" {
-			cached_repos, err = gh_get_repos(ctx, c, owner)
-
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-		} else if (currentTime.Sub(last_fetched_repos).Hours() < 1) || (len(cached_repos) == 0) {
-
-		}
-
-		json_data, err := json.Marshal(cached_repos)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		w.Write(json_data)
+		jsonData, err := json.Marshal(repos)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Write(jsonData)
 
 	}
 }
@@ -83,35 +71,38 @@ func set_repos(w http.ResponseWriter, r *http.Request) {
 
 	defer r.Body.Close()
 
-	new_repo_data := make([]setRepo, 0)
-	cached_repos = make([]*CustomRepo, 0)
+	setRepos := make([]setRepo, 0)
 
-	err = json.Unmarshal(body, &new_repo_data)
+	err = json.Unmarshal(body, &setRepos)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	team, err := read_teams(false)
+	repos, err := read_repos(false)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	for _, repo := range new_repo_data {
-		*team_map[team.Slug].ReviewEnabled = team.ReviewEnabled
-		*team_map[team.Slug].ReviewOrder = team.ReviewOrder
-
-		if team.ReviewEnabled {
-			active_team_map[team.Slug] = team_map[team.Slug]
+	// probably not the fastest way to do this but the list should never be huge...
+	for _, setRepo := range setRepos {
+		if setRepo.Enabled {
+			for _, repo := range repos {
+				if *repo.Name == setRepo.Name {
+					repo.Enabled = &setRepo.Enabled
+				}
+			}
 		}
-
-		updated_team := team_map[team.Slug]
-
-		cached_teams = append(cached_teams, updated_team)
 	}
 
-	w.Write([]byte("Team data saved successfully"))
+	err = write_repos(repos)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Write([]byte("Repo data saved successfully"))
 }
 
 func get_teams(ctx context.Context, c *github.Client, owner string) http.HandlerFunc {
