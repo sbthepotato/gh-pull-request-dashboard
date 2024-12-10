@@ -20,6 +20,7 @@ func main() {
 
 	// POSTS
 	http.HandleFunc("/config/set_teams", set_teams)
+	http.HandleFunc("/config/set_repos", set_repos)
 
 	cors_handler := enable_cors(http.DefaultServeMux)
 
