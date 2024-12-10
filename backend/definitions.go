@@ -1,6 +1,10 @@
 package main
 
-import "github.com/google/go-github/v67/github"
+import (
+	"time"
+
+	"github.com/google/go-github/v67/github"
+)
 
 /*
 core application settings
@@ -67,4 +71,21 @@ type PullRequestInfo struct {
 	PullRequests []*CustomPullRequest `json:"pull_requests,omitempty"`
 	ReviewTeams  []*CustomTeam        `json:"review_teams,omitempty"`
 	Users        []*CustomUser        `json:"users,omitempty"`
+	Updated      *time.Time           `json:"-"`
+}
+
+/*
+repository with enabled field
+*/
+type CustomRepo struct {
+	*github.Repository
+	Enabled *bool `json:"enabled,omitempty"`
+}
+
+/*
+POST to set repo state
+*/
+type setRepo struct {
+	Name    string `json:"name,omitempty"`
+	Enabled bool   `json:"enabled,omitempty"`
 }

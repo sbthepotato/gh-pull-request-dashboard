@@ -27,6 +27,84 @@ func hello_go(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Hello, from the golang backend " + time.Now().String()))
 }
 
+func get_repos(ctx context.Context, c *github.Client, owner string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		setHeaders(&w, "json")
+
+		mu.Lock()
+		defer mu.Unlock()
+
+		repos, err := gh_get_repos(ctx, c, owner)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		jsonData, err := json.Marshal(repos)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Write(jsonData)
+
+	}
+}
+
+func set_repos(w http.ResponseWriter, r *http.Request) {
+	setHeaders(&w, "text")
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	if r.Method != http.MethodPost {
+		http.Error(w, "invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Failed to read request body", http.StatusBadRequest)
+		return
+	}
+
+	defer r.Body.Close()
+
+	setRepos := make([]setRepo, 0)
+
+	err = json.Unmarshal(body, &setRepos)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	repos, err := read_repos(false)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// probably not the fastest way to do this but the list should never be huge...
+	for _, setRepo := range setRepos {
+		if setRepo.Enabled {
+			for _, repo := range repos {
+				if *repo.Name == setRepo.Name {
+					repo.Enabled = &setRepo.Enabled
+				}
+			}
+		}
+	}
+
+	err = write_repos(repos)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Write([]byte("Repo data saved successfully"))
+}
+
 func get_teams(ctx context.Context, c *github.Client, owner string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		setHeaders(&w, "json")
@@ -50,8 +128,6 @@ func get_teams(ctx context.Context, c *github.Client, owner string) http.Handler
 			last_fetched_teams = time.Now()
 
 		} else if (currentTime.Sub(last_fetched_teams).Hours() < 1) || (len(cached_teams) == 0) {
-
-			cached_teams = make([]*CustomTeam, 0)
 
 			teams, err := read_teams(false)
 			if err != nil {
