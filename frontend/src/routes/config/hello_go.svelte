@@ -23,7 +23,6 @@
 </script>
 
 <h2>Connection test</h2>
-<Button color="green" on_click={hello_go}>Say hello to the backend</Button>
 
 <p>
 	{#if err}
@@ -34,6 +33,8 @@
 		<span class="good">{answer}</span>
 	{/if}
 </p>
+
+<Button color="green" on_click={hello_go}>Say hello to the backend</Button>
 
 <style>
 	span.good {
